@@ -1,0 +1,1693 @@
+<!--
+  gpx_shaping_v6.html  –  Bikerfreunde Kohlenpott GPX Tuning Tool
+  VERSION 6.5.8 · 2026-04-14
+
+  CHANGELOG v6.5.8 · 2026-04-14:
+  [FIX] focusSegment: zoomt jetzt auf das SP-Paar mit dem GRÖSSTEN Abstand
+        (die eigentliche Problemstelle) statt auf den gesamten Abschnitt →
+        deutlich mehr Zoom, genau die richtige Stelle
+  [FIX] maxZoom 16 → 17 für noch mehr Detail beim Zoom
+
+  VERSION 6.5.7 · 2026-04-14
+
+  CHANGELOG v6.5.7 · 2026-04-14:
+  [FIX] "Zur Stelle" zoomte nicht korrekt: fitBounds wurde vor Panel-Einklappen
+        berechnet → Bounds passten nicht zur neuen Kartengröße
+  [FIX] focusSegment: erst setCol(true), dann nach Transition invalidateSize()
+        + fitBounds → Zoom trifft genau die Problemstelle
+  [FIX] switchTab('segs') nach focusSegment entfernt – Panel ist eingeklappt,
+        Tab-Wechsel war unsichtbar und verwirrend
+
+  VERSION 6.5.6 · 2026-04-14
+
+  CHANGELOG v6.5.6 · 2026-04-14:
+  [FIX] getZoneWithEle: Zone-Erkennung war komplett defekt – las osmHighwayTag
+        der nirgendwo gesetzt wird → alles als "rural" klassifiziert
+  [FIX] Zone-Erkennung auf korrekte Median-Abstands-Methode umgestellt:
+        median(segs.dist in ±80-Fenster) → city<5m · suburban<20m ·
+        rural<100m · highway≥100m; Track-Farben und Zonen-Balken korrekt
+  [FIX] Höhengradient-Override: Schwelle 4% (statt 10%) für Alpenpässe
+
+  VERSION 6.5.5 · 2026-04-14
+
+  CHANGELOG v6.5.5 · 2026-04-14:
+  [FIX] Schwarzer Balken in Karte wenn Panel eingeklappt: setCol() ruft jetzt
+        map.invalidateSize() nach CSS-Transition auf (260ms Delay) → Leaflet
+        berechnet Kartengröße neu und füllt den kompletten Bereich aus
+  [FIX] initMap: invalidateSize() auch beim ersten Laden + bei Kartenreuse
+
+  VERSION 6.5.4 · 2026-04-14
+
+  CHANGELOG v6.5.4 · 2026-04-14:
+  [NEU] Kartenstil "🗺 Straße" (Esri World Street Map, OSM-Daten) → funktioniert
+        lokal + gehostet, kein Referrer-Problem, beste Wahl für den Alltag
+  [NEU] Kartenstil "🌍 OSM*" bleibt erhalten für gehostete Nutzung (Netlify/HTTPS),
+        mit Leaflet's nativem referrerPolicy='no-referrer' (setzt BEFORE tile.src)
+  [FIX] Kaputten createTile()-Monkey-Patch entfernt (hatte referrerPolicy nach src
+        gesetzt → zu spät, Chrome/Edge ignorierten es)
+  [FIX] Warnung wenn OSM lokal geöffnet wird: Hinweis auf "Straße" als Alternative
+  [INFO] OSM-Tiles lokal (file://) nicht lösbar: OSM-Server blockieren sowohl
+         file://-Referrer als auch No-Referrer – Hosting ist der einzige Weg
+
+  v6.5.2 · 2026-04-14:
+  [FIX] OSM-Kacheln wieder aktiviert: <meta name="referrer" content="no-referrer">
+        verhindert dass Browser den file://-Pfad als Referer-Header schickt →
+        OSM-Tile-Server akzeptiert anonyme Anfragen, "access blocked" behoben
+  [FIX] OSM-Attribution auf echten OpenStreetMap-Link zurückgesetzt
+
+  v6.5.0 · 2026-04-14:
+  [NEU] Kartenstil "🗺 OSM" (OpenStreetMap) als 4. Option – beste Kontraste
+        für farbige Track-Linien; Warnung wenn lokal (file://) geöffnet
+  [NEU] Weißer Outline-Stroke auch für OSM-Karte (Lesbarkeit auf hellem Grund)
+  [NEU] Linienstärke/Deckkraft für OSM optimiert (4.5px / 0.88)
+  [NEU] OSM-Attribution im Leaflet-Layer korrekt gesetzt
+  [FIX] Kachel-Attribution für alle Kartenstile hinterlegt
+
+  v6.4.0 · 2026-04-14:
+  [NEU] "🔀 Vergleich"-Button: Abweichungs-Overlay zeigt für jedes SP-Paar
+        die maximale seitliche Abweichung des Tracks von der Garmin-Direktlinie
+        → Farben: grün <30m · gelb 30-80m · orange 80-150m · rot ≥150m
+  [NEU] Tooltip je Linie: "Max. Abw. vom Track: Xm" (Hover/Tap)
+  [NEU] Separate Legende für Vergleichs-Overlay auf der Karte
+
+  v6.3.0 · 2026-04-14:
+  [FIX] simplifyTrack: Segmente > 800m nach Douglas-Peucker interpoliert →
+        verhindert riesige SP-Lücken auf geraden Straßen (Root cause: 3381m-Gap)
+  [FIX] loadFile: _hasTrack/_fromRpt nach simplifyTrack wiederhergestellt →
+        falsche "Kein Track"-Warnung endgültig behoben
+  [FIX] buildSPs: manualRemove zählte Distanz doppelt → Intervall-SPs
+        wurden zu früh gesetzt wenn manuelle Punkte entfernt wurden
+
+  v6.2.0 · 2026-04-14:
+  [FIX] parseGPX: Kurviger/Garmin-Format erkannt – <gpxx:rpt>-Punkte werden
+        als Track extrahiert (5000+ Detailpunkte statt sparse rtept-Fallback)
+  [FIX] parseGPX: <type>-Element (start/via/destination/shaping) für zuverlässige
+        Stop-Erkennung; <trp:ShapingPoint> wird korrekt ignoriert
+  [FIX] Falsche "Kein Track"-Warnung bei Kurviger-Export unterdrückt
+  [FIX] Meldung beim Laden zeigt Trackquelle: Kurviger-Format / trkpt / rtept
+  [FIX] Qualitätsindikator zeigt Datenquelle (gpxx:rpt / trkpt / rtept)
+  [FIX] focusSegment hinzugefügt – Klick auf Problem/Abschnitt → Karte navigiert
+  [FIX] renderProblems: Klick-Handler mit "📍 Zur Stelle" jetzt funktionsfähig
+  [FIX] renderSegments: Klick-Handler für Kartennavigation jetzt funktionsfähig
+  [FIX] drawResult: turn-Farbe war fehlerhaft gesetzt (fc=',color:var(--or)')
+  [FIX] drawResult: Risiko-Segmente als gestrichelte Überlagerung zurückgebracht
+  [FIX] setMapStyle: Track wird bei Kartenwechsel neu gezeichnet (Kontrast)
+  [NEU] Topo-Karte: weißer Outline-Stroke (Breite +4) für besseren Kontrast
+  [NEU] Topo-Karte: Liniengewicht 5 statt 2, Deckkraft 0.95
+  [NEU] Auto-Fix: verbleibende Probleme mit Ort + tippbarer Navigation
+  [NEU] Panel-Griff: volle Breite als Tap-Target, leuchtet orange beim Drücken
+
+  v6.1.0 · 2026-04-14:
+  [FIX] focusSegment, Kartennavigation, Topo-Kontrast, Risiko-Overlays,
+        Auto-Fix Restprobleme, Panel-Griff vergrößert
+
+  v6.0.0 · 2026-04-14:
+  [FIX] <n> → <name> im GPX-Export (GPX 1.1 Konformität)
+  [FIX] querySelector('Subclass') → getElementsByTagNameNS
+  [FIX] Shaping-Point-Zähler: nur echte SPs (ohne Via/Start/Ziel)
+  [FIX] Segment-Distanz aus Track-Punkten statt SP-Positionen
+  [FIX] Höhenprofil: Schwelle auf Wertebereich statt Absolutwert
+  [FIX] handleDrop: Error-Handler ergänzt
+  [NEU] Douglas-Peucker Track-Vereinfachung (ε = 3 m)
+  [NEU] U-Turn-Erkennung (>135°) als garantierter Shaping Point
+  [NEU] Manuelles SP-Editing: Karte klicken zum Hinzufügen/Entfernen
+  [NEU] Export-Varianten: Kompakt / Aktuell / Präzise
+  [NEU] Baseline-Vergleich: Auto-Fix zeigt konkrete Verbesserung
+  [NEU] Track-Qualitätsindikator beim Laden
+  [NEU] Keyboard-Shortcuts (1–5, E, F, S, Leertaste, Esc)
+  [NEU] PWA-Manifest (auf Homescreen installierbar)
+
+  v5.0.0 · vorherige Version (Basis-Implementation)
+-->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#080808">
+<link rel="manifest" href='data:application/manifest+json,{"name":"BK GPX Tuning","short_name":"GPX Tuning","start_url":".","display":"standalone","background_color":"%23080808","theme_color":"%23FF6200","description":"Kurviger Track → Garmin Shaping Points"}'>
+<title>Bikerfreunde Kohlenpott – GPX Tuning Tool</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Rajdhani:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --bg:#080808;--bg2:#0f0f0f;--bg3:#161616;--bg4:#1c1c1c;
+  --bd:#222;--bd2:#2c2c2c;
+  --or:#FF6200;--ordim:rgba(255,98,0,.1);
+  --city:#ef4444;--sub:#f59e0b;--rural:#22c55e;--hw:#3b82f6;
+  --ok:#22c55e;--warn:#f59e0b;--bad:#ef4444;
+  --tx:#c4c4c4;--tx2:#777;--tx3:#3c3c3c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;height:-webkit-fill-available;overflow:hidden;}
+body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;}
+
+.hdr{height:50px;min-height:50px;background:var(--bg2);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0;padding-top:env(safe-area-inset-top,0);}
+.logo{font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.logo-badge{background:var(--or);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:2px;letter-spacing:1px;}
+.logo-ver{font-size:9px;font-weight:400;color:var(--tx3);font-family:'DM Mono',monospace;letter-spacing:0;margin-left:3px;align-self:flex-end;padding-bottom:1px;}
+.ver-card{background:var(--bg3);border:1px solid var(--bd);border-radius:2px;padding:10px 12px;margin-top:4px;}
+.ver-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx2);margin-bottom:6px;font-family:'DM Mono',monospace;}
+.ver-row{display:flex;gap:6px;align-items:baseline;padding:2px 0;font-size:9px;font-family:'DM Mono',monospace;line-height:1.5;border-bottom:1px solid var(--bd);color:var(--tx3);}
+.ver-row:last-child{border-bottom:none;}
+.ver-tag{font-size:8px;padding:1px 5px;border-radius:2px;flex-shrink:0;font-weight:700;letter-spacing:.5px;}
+.ver-tag.fix{background:rgba(59,130,246,.12);color:#60a5fa;}
+.ver-tag.neu{background:rgba(34,197,94,.1);color:var(--ok);}
+.ver-num{color:var(--or);font-size:9px;font-weight:500;}
+.hstats{display:flex;gap:5px;flex:1;overflow:hidden;min-width:0;}
+.hsp{background:var(--bg3);border:1px solid var(--bd);border-radius:2px;padding:3px 8px;white-space:nowrap;font-family:'DM Mono',monospace;font-size:10px;color:var(--tx2);display:flex;align-items:center;gap:4px;}
+.hsp b{color:var(--tx);font-weight:500;}
+.hsp.warn{border-color:rgba(245,158,11,.4);color:var(--warn);}
+.hsp.ok2{border-color:rgba(34,197,94,.3);color:var(--ok);}
+.hbtn{background:var(--or);color:#fff;border:none;padding:6px 12px;border-radius:2px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;white-space:nowrap;flex-shrink:0;text-transform:uppercase;}
+
+/* MAP */
+#map{flex:1;min-height:0;background:#0a0a0a;position:relative;}
+#map-off{display:none;flex:1;min-height:0;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:var(--tx3);font-family:'DM Mono',monospace;font-size:11px;text-align:center;}
+
+/* Map UI buttons */
+.map-ui{position:absolute;top:88px;right:10px;z-index:1000;display:flex;flex-direction:column;gap:4px;}
+.map-btn{background:rgba(15,15,15,.92);border:1px solid var(--bd);border-radius:2px;padding:5px 8px;font-size:12px;cursor:pointer;color:var(--tx2);font-family:'DM Mono',monospace;white-space:nowrap;}
+.map-btn.active{color:var(--or);border-color:rgba(255,98,0,.4);}
+
+.map-delta{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;background:rgba(255,98,0,.9);color:#fff;border-radius:3px;padding:4px 12px;font-family:'DM Mono',monospace;font-size:11px;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap;}
+.map-delta.show{opacity:1;}
+
+.map-leg{position:absolute;bottom:10px;left:10px;z-index:1000;background:rgba(8,8,8,.94);border:1px solid var(--bd);border-radius:2px;padding:7px 10px;font-family:'DM Mono',monospace;font-size:10px;line-height:2;pointer-events:none;display:none;}
+.ml{display:flex;align-items:center;gap:6px;color:var(--tx2);}
+.ml-ln{width:16px;height:3px;border-radius:2px;flex-shrink:0;}
+.ml-dt{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+
+/* PANEL */
+.panel{background:var(--bg2);border-top:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;height:48vh;transition:height .24s cubic-bezier(.4,0,.2,1);}
+.panel.col{height:calc(50px + env(safe-area-inset-bottom,0px));}
+/* Panel-Griff: große Tappfläche, kleiner visueller Strich */
+.hdl{width:100%;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;user-select:none;-webkit-user-select:none;}
+.hdl::after{content:'';width:44px;height:4px;background:var(--bd2);border-radius:3px;transition:background .15s;}
+.hdl:hover::after,.hdl:active::after{background:var(--or);}
+.tabs{display:flex;border-bottom:1px solid var(--bd);flex-shrink:0;height:44px;}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;border:none;background:none;color:var(--tx3);font-family:'Rajdhani',sans-serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;border-bottom:2px solid transparent;transition:color .12s;position:relative;}
+.tab.on{color:var(--or);border-bottom-color:var(--or);}
+.ti{font-size:14px;}
+.tab-badge{position:absolute;top:4px;right:calc(50% - 15px);background:var(--bad);color:#fff;font-size:8px;font-family:'DM Mono',monospace;padding:1px 4px;border-radius:8px;min-width:14px;text-align:center;display:none;}
+.tab-badge.ok{background:var(--ok);}
+.pane{display:none;flex:1;overflow-y:auto;padding:10px 12px;flex-direction:column;gap:8px;scrollbar-width:none;padding-bottom:env(safe-area-inset-bottom,0);}
+.pane::-webkit-scrollbar{display:none;}
+.pane.on{display:flex;}
+
+/* STATS */
+.sg4{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;}
+.sc{background:var(--bg3);border-radius:2px;padding:7px 3px;text-align:center;border:1px solid var(--bd);}
+.sl{font-size:7px;letter-spacing:1.5px;color:var(--tx3);text-transform:uppercase;font-family:'DM Mono',monospace;}
+.sv{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;margin:2px 0 1px;}
+.sv.or{color:var(--or);}
+.su{font-size:8px;color:var(--tx3);}
+
+/* ZONE BAR */
+.zw{background:var(--bg3);border-radius:2px;padding:8px 10px;border:1px solid var(--bd);}
+.zlab{font-size:7px;letter-spacing:2px;color:var(--tx3);text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:5px;}
+.zbar{height:4px;border-radius:3px;display:flex;overflow:hidden;gap:1px;background:var(--bg4);}
+.zs{height:100%;}
+.zgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:5px;}
+.zi{display:flex;align-items:center;gap:4px;font-size:9px;font-family:'DM Mono',monospace;color:var(--tx2);}
+.zd{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+
+/* QUAL CARD */
+.qual-card{background:var(--bg3);border-radius:2px;padding:8px 10px;border:1px solid var(--bd);}
+.qual-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;margin-top:5px;}
+.qi{display:flex;justify-content:space-between;align-items:center;font-size:9px;font-family:'DM Mono',monospace;}
+.qi-l{color:var(--tx3);}
+.qi-v{color:var(--tx);}
+
+/* ELEV */
+#ew{background:var(--bg3);border-radius:2px;padding:7px 10px;border:1px solid var(--bd);display:none;}
+#ec{width:100%;height:44px;display:block;}
+
+/* AUTO-FIX BANNER */
+.autofix-banner{
+  background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);
+  border-radius:2px;padding:10px 12px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.autofix-text{font-size:11px;font-family:'DM Mono',monospace;color:var(--tx2);line-height:1.5;flex:1;}
+.autofix-text b{color:var(--ok);}
+.autofix-btn{
+  background:var(--ok);color:#000;border:none;border-radius:2px;
+  padding:8px 14px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap;flex-shrink:0;
+}
+.autofix-btn:active{opacity:.7;}
+.autofix-result{
+  background:var(--bg3);border-radius:2px;border-left:3px solid var(--ok);
+  padding:8px 10px;font-family:'DM Mono',monospace;font-size:10px;color:var(--tx2);
+  line-height:1.6;display:none;
+}
+.autofix-result b{color:var(--ok);}
+
+/* PROBLEM LIST */
+.prob-list{display:flex;flex-direction:column;gap:5px;}
+.prob-item{display:flex;align-items:flex-start;gap:8px;background:var(--bg3);border-radius:2px;padding:8px 10px;border:1px solid var(--bd);cursor:pointer;}
+.prob-item.warn{border-left:3px solid var(--warn);}
+.prob-item.bad{border-left:3px solid var(--bad);}
+.prob-item.ok{border-left:3px solid var(--ok);}
+.prob-icon{font-size:14px;flex-shrink:0;margin-top:1px;}
+.prob-body{flex:1;min-width:0;}
+.prob-title{font-size:13px;font-weight:600;}
+.prob-sub{font-size:10px;font-family:'DM Mono',monospace;color:var(--tx2);margin-top:2px;line-height:1.5;}
+.prob-fix{color:var(--or);}
+.prob-nav{font-size:9px;font-family:'DM Mono',monospace;color:var(--or);margin-top:3px;display:inline-block;}
+.prob-badge{font-size:9px;font-family:'DM Mono',monospace;padding:2px 6px;border-radius:2px;flex-shrink:0;align-self:flex-start;}
+.prob-badge.warn{background:rgba(245,158,11,.12);color:var(--warn);}
+.prob-badge.bad{background:rgba(239,68,68,.12);color:var(--bad);}
+.prob-badge.fixed{background:rgba(34,197,94,.1);color:var(--ok);}
+.prob-item.fixed{border-left:3px solid var(--ok);opacity:.7;}
+
+/* SEG LIST */
+.seg-list{display:flex;flex-direction:column;gap:4px;}
+.seg-item{background:var(--bg3);border-radius:2px;border:1px solid var(--bd);padding:7px 10px;cursor:pointer;}
+.seg-item.risk{border-left:3px solid var(--warn);}
+.seg-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.seg-name{font-size:12px;font-weight:600;}
+.seg-dist{font-size:10px;font-family:'DM Mono',monospace;color:var(--tx2);}
+.seg-pills{display:flex;gap:4px;flex-wrap:wrap;}
+.pill{font-size:9px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:10px;}
+.pill.city{background:rgba(239,68,68,.1);color:var(--city);}
+.pill.suburban{background:rgba(245,158,11,.1);color:var(--sub);}
+.pill.rural{background:rgba(34,197,94,.1);color:var(--rural);}
+.pill.highway{background:rgba(59,130,246,.1);color:var(--hw);}
+.pill.sp{background:var(--ordim);color:var(--or);}
+.pill.muted{background:rgba(255,255,255,.05);color:var(--tx2);}
+.pill.warn{background:rgba(245,158,11,.12);color:var(--warn);}
+
+/* SLIDERS */
+.sw{background:var(--bg3);border-radius:2px;padding:10px 11px;border:1px solid var(--bd);}
+.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.st{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.sv2{font-size:12px;font-family:'DM Mono',monospace;color:var(--or);}
+.str{position:relative;height:3px;background:var(--bd2);border-radius:2px;margin:4px 0 8px;}
+.sf{position:absolute;top:0;left:0;height:100%;background:var(--or);border-radius:2px;pointer-events:none;}
+input[type=range]{position:absolute;top:-9px;left:0;width:100%;height:20px;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;background:var(--or);border-radius:50%;box-shadow:0 0 0 3px rgba(255,98,0,.15);}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;background:var(--or);border:none;border-radius:50%;}
+.slabs{display:flex;justify-content:space-between;font-size:8px;font-family:'DM Mono',monospace;color:var(--tx3);}
+.sdesc{font-size:10px;font-family:'DM Mono',monospace;color:var(--tx2);margin-top:5px;line-height:1.5;}
+
+/* MAP STYLE SETTING */
+.map-style-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.ms-btn{
+  background:var(--bg3);border:1px solid var(--bd);border-radius:2px;
+  padding:10px 6px;text-align:center;cursor:pointer;
+  font-family:'DM Mono',monospace;font-size:10px;color:var(--tx2);
+  transition:border-color .12s,color .12s;
+}
+.ms-btn.on{border-color:var(--or);color:var(--or);}
+.ms-icon{font-size:20px;display:block;margin-bottom:3px;}
+
+/* BUTTONS */
+.btn{width:100%;padding:12px;border:none;border-radius:2px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-appearance:none;transition:opacity .1s;}
+.btn:active:not(:disabled){opacity:.7;}
+.btn:disabled{opacity:.2;cursor:not-allowed;}
+.btn-or{background:var(--or);color:#fff;}
+.btn-gr{background:var(--ok);color:#000;}
+.btn-dk{background:var(--bg4);color:var(--tx);border:1px solid var(--bd2);}
+
+/* EXP CARD */
+.exp-card{background:var(--bg3);border-radius:2px;border:1px solid var(--bd);overflow:hidden;}
+.exp-row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-bottom:1px solid var(--bd);}
+.exp-row:last-child{border-bottom:none;}
+.exp-label{font-size:10px;font-family:'DM Mono',monospace;color:var(--tx2);}
+.exp-val{font-size:11px;font-family:'DM Mono',monospace;color:var(--or);}
+
+/* VARIANT CARDS */
+.var-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;}
+.var-card{background:var(--bg3);border:1px solid var(--bd);border-radius:2px;padding:10px 6px;text-align:center;cursor:pointer;transition:border-color .12s;}
+.var-card.on{border-color:var(--or);background:rgba(255,98,0,.06);}
+.var-icon{font-size:20px;display:block;margin-bottom:3px;}
+.var-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--tx2);margin-bottom:4px;}
+
+.note{font-size:10px;color:var(--tx3);font-family:'DM Mono',monospace;line-height:1.7;}
+.note b{color:var(--tx2);}
+.hl{background:var(--ordim);border-left:3px solid var(--or);padding:8px 10px;border-radius:2px;}
+.empty{text-align:center;padding:20px;color:var(--tx3);font-family:'DM Mono',monospace;font-size:11px;line-height:1.8;}
+
+/* UPLOAD */
+#upl{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 20px;}
+#upl.h{display:none;}
+.uh1{font-size:32px;font-weight:700;text-align:center;line-height:1;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;}
+.uh1 b{color:var(--or);}
+.us{color:var(--tx3);font-size:11px;margin-bottom:24px;text-align:center;font-family:'DM Mono',monospace;line-height:1.7;}
+.dz-label{display:block;width:100%;max-width:340px;border:1px dashed var(--bd2);border-radius:4px;padding:30px 18px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;}
+.dz-label:hover,.dz-label.dg{border-color:var(--or);background:var(--ordim);}
+.dz-icon{font-size:36px;display:block;margin-bottom:7px;}
+.dz-title{font-size:16px;font-weight:600;letter-spacing:1px;margin-bottom:3px;}
+.dz-sub{font-size:10px;color:var(--tx3);font-family:'DM Mono',monospace;line-height:1.6;}
+#fi{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;}
+
+/* SAVE MODAL */
+#smod{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.82);display:flex;align-items:flex-end;padding:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));}
+#smod.h{display:none;}
+.sbox{background:var(--bg2);border-radius:6px;width:100%;max-width:460px;margin:0 auto;overflow:hidden;border:1px solid var(--bd);}
+.shdr2{padding:11px 14px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;}
+.stitle{font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
+.sx{background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:2px 6px;}
+.sbody{padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
+.sta{width:100%;height:65px;background:var(--bg3);border:1px solid var(--bd);border-radius:2px;color:var(--tx);font-family:'DM Mono',monospace;font-size:9px;padding:7px;resize:none;line-height:1.4;}
+.sg2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.dl-link{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:12px;border-radius:2px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-decoration:none;background:var(--ok);color:#000;}
+.snote{font-size:9px;color:var(--tx3);font-family:'DM Mono',monospace;line-height:1.7;}
+
+.toast{position:fixed;bottom:calc(48vh + 12px);left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--bd2);border-radius:20px;padding:6px 14px;font-size:11px;font-family:'DM Mono',monospace;z-index:9999;white-space:nowrap;pointer-events:none;animation:tIn .15s ease;}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(4px);}}
+</style>
+</head>
+<body>
+
+<div id="upl">
+  <div class="uh1">Bikerfreunde<br><b>Kohlenpott</b></div>
+  <div class="us">GPX Tuning Tool · Garmin Zumo XT2<br>Kurviger Track → Garmin Route<br><span id="upl-ver" style="color:var(--tx3);font-size:10px"></span></div>
+  <label class="dz-label" id="dz"
+    ondragover="event.preventDefault();this.classList.add('dg')"
+    ondragleave="this.classList.remove('dg')"
+    ondrop="handleDrop(event)">
+    <span class="dz-icon">🗺️</span>
+    <div class="dz-title">GPX-Datei wählen</div>
+    <div class="dz-sub">Tippen zum Öffnen oder Datei hierher ziehen<br>Kurviger Export: Track + Route</div>
+    <input type="file" id="fi" accept=".gpx" onchange="handleFile(this)">
+  </label>
+</div>
+
+<div id="smod" class="h">
+  <div class="sbox">
+    <div class="shdr2"><span class="stitle">Garmin-Route speichern</span><button class="sx" id="sm-x">✕</button></div>
+    <div class="sbody">
+      <div id="sm-dl-wrap"></div>
+      <textarea class="sta" id="sm-ta" readonly></textarea>
+      <div class="sg2">
+        <button class="btn btn-or" id="sm-copy">📋 Kopieren</button>
+        <button class="btn btn-dk" id="sm-open">🔗 Browser</button>
+      </div>
+      <div class="snote">
+        <b>SD-Karte:</b> in /Garmin/GPX/ · XT2 → Routen → Importieren<br>
+        <b>iOS:</b> Browser → Teilen → Dateien · <b>Desktop:</b> Link oben
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="hdr">
+  <div class="logo"><span class="logo-badge">BK</span>GPX Tuning<span class="logo-ver" id="logo-ver"></span></div>
+  <div class="hstats" id="hstats">
+    <div class="hsp" id="h-dist" style="display:none"><b id="hd-dist">–</b> km</div>
+    <div class="hsp" id="h-sp"   style="display:none">SP: <b id="hd-sp">–</b></div>
+    <div class="hsp" id="h-prob" style="display:none"><b id="hd-prob">–</b> Problem(e)</div>
+    <div class="hsp" id="h-manual" style="display:none">✏ <b id="hd-manual">0</b> manuell</div>
+  </div>
+  <button class="hbtn" id="btn-new">📂 Laden</button>
+</div>
+
+<div id="map">
+  <div class="map-ui" id="map-ui" style="display:none">
+    <button class="map-btn active" id="ms-dark"  onclick="setMapStyle('dark')">🌙 Dark</button>
+    <button class="map-btn"        id="ms-light" onclick="setMapStyle('light')">☀️ Hell</button>
+    <button class="map-btn"        id="ms-topo"  onclick="setMapStyle('topo')">🏔 Topo</button>
+    <button class="map-btn"        id="ms-street" onclick="setMapStyle('street')">🗺 Straße</button>
+    <button class="map-btn"        id="ms-osm"    onclick="setMapStyle('osm')" title="Nur bei Hosting (HTTPS) verfügbar">🌍 OSM</button>
+    <button class="map-btn" id="btn-edit" onclick="toggleEditMode()">✏️ Edit</button>
+    <button class="map-btn" id="btn-dev"  onclick="toggleDevOverlay()" title="Zeigt: Wie weit weicht Garmin vom Track ab?">🔀 Vergleich</button>
+  </div>
+  <div class="map-delta" id="map-delta"></div>
+  <div class="map-leg" id="map-leg">
+    <div class="ml"><div class="ml-ln" style="background:var(--city)"></div>Stadt</div>
+    <div class="ml"><div class="ml-ln" style="background:var(--sub)"></div>Ortschaft</div>
+    <div class="ml"><div class="ml-ln" style="background:var(--rural)"></div>Landstraße</div>
+    <div class="ml"><div class="ml-ln" style="background:var(--hw)"></div>Autobahn</div>
+    <div class="ml"><div class="ml-dt" style="background:var(--or)"></div>Shaping Pt</div>
+    <div class="ml"><div class="ml-dt" style="background:#fff"></div>Stop</div>
+    <div class="ml"><div class="ml-dt" style="background:#ff0099"></div>U-Turn</div>
+    <div class="ml"><div class="ml-dt" style="background:#0ea5e9"></div>Manuell</div>
+    <div class="ml"><div class="ml-ln" style="background:var(--warn);height:0;border-top:2px dashed var(--warn)"></div>⚠ Risiko</div>
+  </div>
+  <!-- Abweichungs-Legende (nur sichtbar wenn Vergleich-Overlay aktiv) -->
+  <div class="map-leg" id="dev-leg" style="display:none;margin-top:6px;">
+    <div class="ml"><div class="ml-ln" style="background:#22c55e;height:0;border-top:2px dashed #22c55e"></div>&lt;30m OK</div>
+    <div class="ml"><div class="ml-ln" style="background:#eab308;height:0;border-top:2px dashed #eab308"></div>30–80m</div>
+    <div class="ml"><div class="ml-ln" style="background:#f59e0b;height:0;border-top:2px dashed #f59e0b"></div>80–150m</div>
+    <div class="ml"><div class="ml-ln" style="background:#ef4444;height:0;border-top:2px dashed #ef4444"></div>&gt;150m ⛔</div>
+  </div>
+</div>
+<div id="map-off"></div>
+
+<div class="panel" id="panel">
+  <div class="hdl" id="hdl"></div>
+  <div class="tabs">
+    <button class="tab on" data-t="info"><span class="ti">📊</span><span>Übersicht</span></button>
+    <button class="tab" data-t="prob"><span class="ti">⚠️</span><span>Probleme</span><span class="tab-badge" id="prob-badge"></span></button>
+    <button class="tab" data-t="segs"><span class="ti">🗂</span><span>Abschnitte</span></button>
+    <button class="tab" data-t="set"><span class="ti">⚙️</span><span>Einstellungen</span></button>
+    <button class="tab" data-t="exp"><span class="ti">💾</span><span>Export</span></button>
+  </div>
+
+  <!-- ÜBERSICHT -->
+  <div class="pane on" id="p-info">
+    <div class="sg4">
+      <div class="sc"><div class="sl">Distanz</div><div class="sv" id="s-dist">–</div><div class="su">km</div></div>
+      <div class="sc"><div class="sl">Stops</div><div class="sv" id="s-via">–</div><div class="su">Via Pts</div></div>
+      <div class="sc"><div class="sl">Shaping</div><div class="sv or" id="s-sp">–</div><div class="su">Points</div></div>
+      <div class="sc"><div class="sl">Turns</div><div class="sv" id="s-turns">–</div><div class="su">erkannt</div></div>
+    </div>
+    <div class="zw" id="zw" style="display:none">
+      <div class="zlab">Streckentyp-Verteilung</div>
+      <div class="zbar" id="zbar"></div>
+      <div class="zgrid" id="zgrid"></div>
+    </div>
+    <div id="ew">
+      <div class="zlab">Höhenprofil</div>
+      <canvas id="ec"></canvas>
+    </div>
+    <div class="qual-card" id="qual-card" style="display:none">
+      <div class="zlab">Track-Qualität</div>
+      <div class="qual-grid">
+        <div class="qi"><span class="qi-l">Punkte</span><span class="qi-v" id="q-pts">–</span></div>
+        <div class="qi"><span class="qi-l">∅ Abstand</span><span class="qi-v" id="q-avg">–</span></div>
+        <div class="qi"><span class="qi-l">Höhendaten</span><span class="qi-v" id="q-ele">–</span></div>
+        <div class="qi"><span class="qi-l">Bewertung</span><span class="qi-v" id="q-rate">–</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROBLEME -->
+  <div class="pane" id="p-prob">
+    <div id="prob-list"></div>
+  </div>
+
+  <!-- ABSCHNITTE -->
+  <div class="pane" id="p-segs">
+    <div id="seg-list"></div>
+  </div>
+
+  <!-- EINSTELLUNGEN -->
+  <div class="pane" id="p-set">
+    <div class="autofix-banner">
+      <div class="autofix-text">
+        <b>Auto-Fix</b> testet Winkel & Dichte, optimiert auf 0 Probleme
+      </div>
+      <button class="autofix-btn" id="btn-auto" onclick="runAutoFix()">⚡ Los</button>
+    </div>
+    <div class="autofix-result" id="autofix-result"></div>
+    <div class="sw">
+      <div class="sh">
+        <div class="st">Richtungsänderung</div>
+        <div class="sv2" id="ang-val">20°</div>
+      </div>
+      <div class="str"><div class="sf" id="ang-fill"></div><input type="range" id="ang-r" min="5" max="40" value="20" oninput="setAng(this.value)"></div>
+      <div class="slabs"><span>Empfindlich</span><span>Locker</span></div>
+      <div class="sdesc" id="ang-desc">Richtungsänderung ab 20° → Shaping Point gesetzt</div>
+    </div>
+    <div class="sw">
+      <div class="sh">
+        <div class="st">Punktdichte</div>
+        <div class="sv2" id="dens-val">Mittel</div>
+      </div>
+      <div class="str"><div class="sf" id="dens-fill"></div><input type="range" id="dens-r" min="1" max="5" value="3" oninput="setDens(this.value)"></div>
+      <div class="slabs"><span>Sehr eng</span><span>Weit</span></div>
+      <div class="sdesc" id="dens-desc">Stadt: 50m · Ort: 80m · Land: 1.0km · Autobahn: 2km</div>
+    </div>
+    <div class="sw">
+      <div class="sh">
+        <div class="st">Karten-Stil</div>
+      </div>
+      <div class="map-style-grid">
+        <div class="ms-btn on" id="msb-dark" onclick="setMapStyle('dark')"><div class="ms-icon">🌙</div>Dark</div>
+        <div class="ms-btn" id="msb-light" onclick="setMapStyle('light')"><div class="ms-icon">☀️</div>Hell</div>
+        <div class="ms-btn" id="msb-topo" onclick="setMapStyle('topo')"><div class="ms-icon">🏔</div>Topo</div>
+        <div class="ms-btn" id="msb-street" onclick="setMapStyle('street')"><div class="ms-icon">🗺</div>Straße</div>
+        <div class="ms-btn" id="msb-osm" onclick="setMapStyle('osm')" title="Nur bei Hosting (HTTPS)"><div class="ms-icon">🌍</div>OSM*</div>
+      </div>
+    </div>
+    <button class="btn btn-dk" id="btn-clear-man" onclick="clearManualEdits()" style="display:none">✕ Manuelle Edits löschen</button>
+    <div class="note" id="kbd-hint" style="display:none">
+      <b>Shortcuts:</b> 1-5 Tabs · E Edit-Modus · F Auto-Fix · S Speichern · Leertaste Panel
+    </div>
+    <!-- VERSION INFO -->
+    <div class="ver-card" id="ver-card">
+      <div class="ver-title">Über dieses Tool</div>
+      <div class="ver-row"><span class="ver-tag neu">INFO</span><span>Bikerfreunde Kohlenpott · Garmin Zumo XT2</span></div>
+      <div class="ver-row"><span class="ver-tag neu">INFO</span><span>Version <span class="ver-num" id="ver-display"></span></span></div>
+      <div style="height:6px"></div>
+      <div class="ver-title" style="margin-top:2px">Changelog</div>
+      <div class="ver-row"><span class="ver-tag fix">FIX</span><span>Kurviger gpxx:rpt Format erkannt (v6.2)</span></div>
+      <div class="ver-row"><span class="ver-tag fix">FIX</span><span>Stop-Erkennung via &lt;type&gt;-Element (v6.2)</span></div>
+      <div class="ver-row"><span class="ver-tag fix">FIX</span><span>Klick auf Problem/Abschnitt → Karte (v6.1)</span></div>
+      <div class="ver-row"><span class="ver-tag neu">NEU</span><span>Topo-Karte: weißer Outline für Kontrast (v6.1)</span></div>
+      <div class="ver-row"><span class="ver-tag neu">NEU</span><span>Auto-Fix: Restprobleme mit Navigation (v6.1)</span></div>
+      <div class="ver-row"><span class="ver-tag fix">FIX</span><span>&lt;name&gt; statt &lt;n&gt; im GPX-Export (v6.0)</span></div>
+      <div class="ver-row"><span class="ver-tag neu">NEU</span><span>Manuelles SP-Editing auf der Karte (v6.0)</span></div>
+      <div class="ver-row"><span class="ver-tag neu">NEU</span><span>Douglas-Peucker, U-Turn, Varianten (v6.0)</span></div>
+    </div>
+  </div>
+
+  <!-- EXPORT -->
+  <div class="pane" id="p-exp">
+    <div class="note hl">Stops bleiben <b>Via Points</b> · Rest sind <b>Shaping Points</b><br>mit <code style="color:var(--or)">gpxx:RoutePointExtension</code></div>
+    <div class="var-grid" id="var-grid" style="display:none">
+      <div class="var-card on" id="var-compact" onclick="setActiveVariant('compact')">
+        <div class="var-icon">🗜</div>
+        <div class="var-label">Kompakt</div>
+        <div class="var-sp" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--or)">–</div>
+        <div class="var-prob" style="font-family:'DM Mono',monospace;font-size:10px">–</div>
+      </div>
+      <div class="var-card on" id="var-balanced" onclick="setActiveVariant('balanced')">
+        <div class="var-icon">⚖️</div>
+        <div class="var-label">Aktuell</div>
+        <div class="var-sp" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--or)">–</div>
+        <div class="var-prob" style="font-family:'DM Mono',monospace;font-size:10px">–</div>
+      </div>
+      <div class="var-card" id="var-precise" onclick="setActiveVariant('precise')">
+        <div class="var-icon">🎯</div>
+        <div class="var-label">Präzise</div>
+        <div class="var-sp" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--or)">–</div>
+        <div class="var-prob" style="font-family:'DM Mono',monospace;font-size:10px">–</div>
+      </div>
+    </div>
+    <button class="btn btn-gr" id="btn-save" disabled>💾 Als Garmin-Route speichern</button>
+    <div class="exp-card" id="exp-card" style="display:none">
+      <div class="exp-row"><span class="exp-label">Datei</span><span class="exp-val" id="exp-name" style="font-size:9px">–</span></div>
+      <div class="exp-row"><span class="exp-label">Shaping Points</span><span class="exp-val" id="exp-sp">–</span></div>
+      <div class="exp-row"><span class="exp-label">Via Points (Stops)</span><span class="exp-val" id="exp-via">–</span></div>
+      <div class="exp-row"><span class="exp-label">Risiko-Segmente</span><span class="exp-val" id="exp-risk">–</span></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+
+// GLOBAL STATE
+var VERSION='6.5.8'; // ← hier aktualisieren bei jedem Release
+var TRACK=[],VIAS=[],RESULT=null,HAS_MAP=false,map=null,tileLayer=null,mapStyle='dark';
+var angleThresh=20,density=3,collapsed=false,prevSPCount=0,GPX_CONTENT='',GPX_NAME='',FNAME='';
+var ZONE_GAPS={
+  city:[50,40,30,25,20],
+  suburban:[80,70,60,50,40],
+  rural:[1000,800,600,400,300],
+  highway:[2000,1500,1200,1000,800]
+};
+var BASELINE_PROBLEMS=null;
+var SIMPLIFIED_COUNT=0,RAW_COUNT=0;
+var MANUAL_ADD=new Set(),MANUAL_REMOVE=new Set(),editMode=false;
+var VARIANTS={compact:null,balanced:null,precise:null},activeVariant='balanced';
+
+function g(id){return document.getElementById(id);}
+
+// PERPENDICULAR DISTANCE (Douglas-Peucker helper)
+function perpDist(pt,a,b){
+  var ax=a.lon,ay=a.lat,bx=b.lon,by=b.lat,px=pt.lon,py=pt.lat;
+  var dx=bx-ax,dy=by-ay,len2=dx*dx+dy*dy;
+  if(len2<1e-14){
+    var dxp=px-ax,dyp=py-ay;
+    var latM=dyp*111111,lonM=dxp*111111*Math.cos(py*Math.PI/180);
+    return Math.sqrt(latM*latM+lonM*lonM);
+  }
+  var t=Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/len2));
+  var qx=ax+t*dx,qy=ay+t*dy;
+  var latM=(py-qy)*111111,lonM=(px-qx)*111111*Math.cos(py*Math.PI/180);
+  return Math.sqrt(latM*latM+lonM*lonM);
+}
+
+// DOUGLAS-PEUCKER SIMPLIFICATION
+function simplifyTrack(pts,epsilon){
+  if(pts.length<=2)return pts.slice();
+  var keep=new Uint8Array(pts.length);keep[0]=1;keep[pts.length-1]=1;
+  var stack=[[0,pts.length-1]];
+  while(stack.length){
+    var seg=stack.pop(),lo=seg[0],hi=seg[1];
+    if(hi-lo<=1)continue;
+    var maxD=0,maxI=lo;
+    for(var i=lo+1;i<hi;i++){
+      var d=perpDist(pts[i],pts[lo],pts[hi]);
+      if(d>maxD){maxD=d;maxI=i;}
+    }
+    if(maxD>epsilon){
+      keep[maxI]=1;
+      stack.push([lo,maxI]);
+      stack.push([maxI,hi]);
+    }
+  }
+  var dp=pts.filter(function(_,i){return keep[i];});
+  // Lange Geraden aufteilen: D-P entfernt Punkte auf geraden Straßen → riesige
+  // Segmente entstehen → Intervall-SPs können nicht mehr dazwischen gesetzt werden.
+  // Lösung: Segmente > 800m durch interpolierte Punkte unterteilen.
+  var MAX_SEG=800;
+  var out=[dp[0]];
+  for(var i=1;i<dp.length;i++){
+    var d=hav(dp[i-1],dp[i]);
+    if(d>MAX_SEG){
+      var n=Math.floor(d/MAX_SEG);
+      for(var j=1;j<=n;j++){
+        var t=j/(n+1);
+        out.push({lat:dp[i-1].lat+t*(dp[i].lat-dp[i-1].lat),lon:dp[i-1].lon+t*(dp[i].lon-dp[i-1].lon),ele:(dp[i-1].ele||0)+t*((dp[i].ele||0)-(dp[i-1].ele||0))});
+      }
+    }
+    out.push(dp[i]);
+  }
+  return out;
+}
+
+// HAVERSINE
+function hav(p1,p2){
+  var R=6371000;
+  var lat1=p1.lat*Math.PI/180,lat2=p2.lat*Math.PI/180;
+  var dlat=(p2.lat-p1.lat)*Math.PI/180,dlon=(p2.lon-p1.lon)*Math.PI/180;
+  var a=Math.sin(dlat/2)*Math.sin(dlat/2)+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dlon/2)*Math.sin(dlon/2);
+  return R*2*Math.asin(Math.sqrt(a));
+}
+
+// BEARING
+function bearing(p1,p2){
+  var lat1=p1.lat*Math.PI/180,lat2=p2.lat*Math.PI/180;
+  var dlon=(p2.lon-p1.lon)*Math.PI/180;
+  var y=Math.sin(dlon)*Math.cos(lat2);
+  var x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dlon);
+  return(Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+
+// ANGLE DIFF
+function angleDiff(a1,a2){
+  var d=Math.abs(a1-a2);
+  return d>180?360-d:d;
+}
+
+// CROSS-TRACK DISTANCE: senkrechter Abstand von Punkt p zur Linie a→b (in Metern)
+function crossTrackDist(p,a,b){
+  var R=6371000;
+  var d=hav(a,p)/R;
+  if(d===0)return 0;
+  var bear_ap=bearing(a,p)*Math.PI/180;
+  var bear_ab=bearing(a,b)*Math.PI/180;
+  return Math.abs(Math.asin(Math.max(-1,Math.min(1,Math.sin(d)*Math.sin(bear_ap-bear_ab))))*R);
+}
+
+// ABWEICHUNGS-ANALYSE: für jedes SP-Paar die maximale seitliche Abweichung des Tracks berechnen
+function computeDeviations(pts,track){
+  var devs=[];
+  for(var i=0;i<pts.length-1;i++){
+    var a=pts[i],b=pts[i+1];
+    var idxA=a._trackIdx||0;
+    var idxB=(b._trackIdx!==undefined)?b._trackIdx:track.length-1;
+    var maxDev=0;
+    // Track-Punkte zwischen den beiden SPs prüfen
+    for(var j=idxA;j<=Math.min(idxB,track.length-1);j++){
+      var d=crossTrackDist(track[j],a,b);
+      if(d>maxDev)maxDev=d;
+    }
+    // Farbe nach Risiko: grün < 30m, gelb < 80m, orange < 150m, rot ≥ 150m
+    var col=maxDev<30?'#22c55e':maxDev<80?'#eab308':maxDev<150?'#f59e0b':'#ef4444';
+    devs.push({a:a,b:b,maxDev:maxDev,col:col});
+  }
+  return devs;
+}
+
+// ABWEICHUNGS-OVERLAY zeichnen
+var showDevOverlay=false;
+function drawDevOverlay(devs){
+  if(window.devLayer)map.removeLayer(window.devLayer);
+  var grp=L.featureGroup();
+  devs.forEach(function(d){
+    var line=L.polyline([[d.a.lat,d.a.lon],[d.b.lat,d.b.lon]],{color:d.col,weight:3.5,opacity:0.82,dashArray:'7 4',lineJoin:'round'});
+    line.bindTooltip('Max. Abw. vom Track: <b>'+Math.round(d.maxDev)+'m</b>',{sticky:true,direction:'top'});
+    grp.addLayer(line);
+  });
+  window.devLayer=grp;
+  map.addLayer(grp);
+  // Legende aktualisieren
+  var dl=g('dev-leg');if(dl)dl.style.display='flex';
+}
+function toggleDevOverlay(){
+  if(!RESULT||!HAS_MAP)return;
+  showDevOverlay=!showDevOverlay;
+  var btn=g('btn-dev');if(btn)btn.classList.toggle('active',showDevOverlay);
+  if(showDevOverlay){
+    drawDevOverlay(computeDeviations(RESULT.pts,TRACK));
+  } else {
+    if(window.devLayer){map.removeLayer(window.devLayer);window.devLayer=null;}
+    var dl=g('dev-leg');if(dl)dl.style.display='none';
+  }
+}
+
+// ZONE DETECTION
+function getZoneWithEle(segs,track,i,W){
+  var s=Math.max(0,i-W),e=Math.min(segs.length-1,i+W);
+
+  // Median der GPS-Segment-Abstände im Fenster bestimmt die Zone
+  // (Mittelwert wäre anfällig für Ausreißer durch 800m-Interpolationen)
+  var dists=[];
+  for(var j=s;j<=e;j++)dists.push(segs[j].dist);
+  dists.sort(function(a,b){return a-b;});
+  var median=dists[Math.floor(dists.length/2)]||0;
+
+  // Schwellwerte: city<5m · suburban<20m · rural<100m · highway≥100m
+  var zone=median<5?'city':median<20?'suburban':median<100?'rural':'highway';
+
+  // Höhengradient-Override: steile Abschnitte (>4%) → mindestens rural
+  // verhindert dass Alpenpässe als Stadt/Ort klassifiziert werden
+  if(zone==='city'||zone==='suburban'){
+    var grades=0,climbCount=0;
+    for(var j=s;j<e;j++){
+      if(track[j+1]&&track[j]){
+        var ele=track[j+1].ele-track[j].ele,dist=segs[j].dist;
+        if(dist>0){var grade=Math.abs(ele)/dist;if(grade>0.04){climbCount++;grades+=grade;}}
+      }
+    }
+    if(climbCount>0&&grades/climbCount>0.04)zone='rural';
+  }
+  return zone;
+}
+
+// CHECK REAL STOP
+function isRealStop(name){
+  if(!name)return false;
+  var lower=name.toLowerCase();
+  var trash=['punkt','point','wp','marker','route point','shaping'];
+  return!trash.some(function(t){return lower.indexOf(t)>=0;});
+}
+
+// BUILD SHAPING POINTS
+function buildSPs(track,vias,angThresh,dens,manualAdd,manualRemove){
+  if(track.length<2)return{pts:[],turnCount:0,intCount:0,zones:[],segments:[],problems:[]};
+
+  var segs=[];
+  for(var i=0;i<track.length-1;i++)
+    segs.push({dist:hav(track[i],track[i+1]),bear:bearing(track[i],track[i+1])});
+
+  var W=80,zones=segs.map(function(_,i){
+    return getZoneWithEle(segs,track,i,W);
+  });
+
+  function avgBear(idx,r){
+    var s=Math.max(0,idx-r),e=Math.min(segs.length-1,idx+r),sinS=0,cosS=0,n=0;
+    for(var j=s;j<=e;j++){sinS+=Math.sin(segs[j].bear*Math.PI/180);cosS+=Math.cos(segs[j].bear*Math.PI/180);n++;}
+    return Math.atan2(sinS/n,cosS/n)*180/Math.PI;
+  }
+  var isTurn=new Array(track.length).fill(false);
+  for(var i=1;i<track.length-1;i++)
+    if(angleDiff(avgBear(i-1,3),avgBear(i,3))>=angThresh)isTurn[i]=true;
+
+  // U-TURN DETECTION
+  var isUTurn=new Array(track.length).fill(false);
+  for(var i=1;i<track.length-1;i++){
+    if(angleDiff(avgBear(i-1,1),avgBear(i,1))>=135)isUTurn[i]=true;
+  }
+
+  var viaIdxSet=new Set(),viaIdxMap=new Map();
+  vias.forEach(function(v){
+    var best=0,bestD=Infinity;
+    for(var i=0;i<track.length;i++){var d=hav(track[i],v);if(d<bestD){bestD=d;best=i;}}
+    viaIdxSet.add(best);viaIdxMap.set(best,v);v._trackIdx=best;v._matchDist=bestD;
+  });
+
+  var densIdx=Math.min(4,Math.max(0,dens-1));
+  var result=[],turnCount=0,intCount=0,distSinceLast=0;
+
+  function addPt(idx,type){
+    var p={lat:track[idx].lat,lon:track[idx].lon,ele:track[idx].ele||0,_type:type,_zone:zones[Math.min(idx,zones.length-1)]||'rural',_trackIdx:idx};
+    if(viaIdxMap.has(idx)){var v=viaIdxMap.get(idx);p._name=v._name;p._matchDist=v._matchDist||0;}
+    result.push(p);distSinceLast=0;
+  }
+
+  addPt(0,viaIdxSet.has(0)?'via':'start');
+  for(var i=1;i<track.length-1;i++){
+    var zone=zones[Math.min(i,zones.length-1)]||'rural';
+    var maxGap=ZONE_GAPS[zone][densIdx];
+    distSinceLast+=(segs[i-1]?segs[i-1].dist:0);
+    if(manualRemove&&manualRemove.has(i)){continue;} // Distanz wurde bereits in Zeile davor addiert
+    if(manualAdd&&manualAdd.has(i)){addPt(i,'manual');continue;}
+    if(viaIdxSet.has(i)){addPt(i,'via');continue;}
+    if(isUTurn[i]&&!isTurn[i]){addPt(i,'uturn');turnCount++;continue;}
+    if(isTurn[i]){addPt(i,'turn');turnCount++;continue;}
+    if(distSinceLast>=maxGap){addPt(i,'interval');intCount++;}
+  }
+  addPt(track.length-1,viaIdxSet.has(track.length-1)?'via':'end');
+
+  var stopIdxs=[];
+  result.forEach(function(p,i){if(['start','end','via'].indexOf(p._type)>=0)stopIdxs.push(i);});
+  var segments=[];
+  for(var s=0;s<stopIdxs.length-1;s++){
+    var fromI=stopIdxs[s],toI=stopIdxs[s+1],pts=result.slice(fromI,toI+1);
+    var spCount=pts.filter(function(p){return p._type==='turn'||p._type==='interval'||p._type==='uturn'||p._type==='manual';}).length;
+    var turnCount2=pts.filter(function(p){return p._type==='turn'||p._type==='uturn';}).length;
+    var maxGapDist=0;
+    for(var j=0;j<pts.length-1;j++){var d=hav(pts[j],pts[j+1]);if(d>maxGapDist)maxGapDist=d;}
+    var zoneCounts={city:0,suburban:0,rural:0,highway:0};
+    pts.forEach(function(p){if(p._zone)zoneCounts[p._zone]++;});
+    var domZone=Object.keys(zoneCounts).sort(function(a,b){return zoneCounts[b]-zoneCounts[a];})[0]||'rural';
+    var segDist=0;
+    var trackFrom=result[fromI]._trackIdx||0;
+    var trackTo=result[toI]._trackIdx||track.length-1;
+    for(var tj=trackFrom;tj<trackTo&&tj<track.length-1;tj++)
+      segDist+=segs[tj]?segs[tj].dist:0;
+    var maxAllowed=ZONE_GAPS[domZone][densIdx];
+    var riskLevel=maxGapDist>maxAllowed*4?'bad':maxGapDist>maxAllowed*2?'warn':'ok';
+    var fromName=result[fromI]._name||(fromI===0?'Start':'Stop');
+    var toName=result[toI]._name||(toI===result.length-1?'Ziel':'Stop');
+    segments.push({fromI:fromI,toI:toI,pts:pts,spCount:spCount,turnCount:turnCount2,domZone:domZone,maxGap:maxGapDist,maxAllowed:maxAllowed,riskLevel:riskLevel,segDist:segDist,fromName:fromName,toName:toName});
+  }
+
+  var problems=[];
+  segments.filter(function(s){return s.riskLevel!=='ok';}).forEach(function(s){
+    var fix=(s.domZone==='city'||s.domZone==='suburban')?'Dichte erhöhen':'Schwelle senken oder Dichte erhöhen';
+    problems.push({level:s.riskLevel,title:s.fromName+' → '+s.toName,sub:'Größte Lücke: '+Math.round(s.maxGap)+'m (erlaubt: ~'+Math.round(s.maxAllowed)+'m)',fix:fix,seg:s});
+  });
+  vias.forEach(function(v){if(v._matchDist>200)problems.push({level:'warn',title:'Stop weit vom Track: '+(v._name||'Stop'),sub:Math.round(v._matchDist)+'m Abweichung – evtl. falsch zugeordnet',fix:null,seg:null});});
+  if(result.length>800)problems.push({level:'warn',title:'Viele Shaping Points: '+result.length,sub:'Importzeit auf XT2 kann lang werden. Auto-Fix oder Dichte lockern.',fix:null,seg:null});
+  // Nur warnen wenn wirklich kein Track UND kein gpxx:rpt vorhanden
+  if(!track._hasTrack)problems.push({level:'warn',title:'Kein Track in GPX gefunden',sub:'Nur Route-Punkte vorhanden. Kurviger: "Als Track exportieren" wählen.',fix:null,seg:null});
+
+  return{pts:result,turnCount:turnCount,intCount:intCount,zones:zones,segments:segments,problems:problems};
+}
+
+// AUTO-FIX
+function runAutoFix(){
+  if(!BASELINE_PROBLEMS&&RESULT){
+    BASELINE_PROBLEMS=RESULT.problems.slice();
+  }
+  showToast('Auto-Fix läuft…');
+  setTimeout(function(){
+    var bestAng=angleThresh,bestDens=density,bestScore=99999,bestResult=null;
+    for(var ang=10;ang<=40;ang+=5){
+      for(var dens=2;dens<=5;dens++){
+        var r=buildSPs(TRACK,VIAS,ang,dens,null,null);
+        var badCnt=r.problems.filter(function(p){return p.level==='bad';}).length;
+        var warnCnt=r.problems.filter(function(p){return p.level==='warn';}).length;
+        var spCnt=r.pts.length;
+        var score=badCnt*1000+warnCnt*200+Math.floor(spCnt/10);
+        if(score<bestScore){bestScore=score;bestAng=ang;bestDens=dens;bestResult=r;}
+      }
+    }
+    angleThresh=bestAng;density=bestDens;
+    updateSliderUI();
+    RESULT=bestResult;
+    VARIANTS.balanced=bestResult;
+    computeVariants();
+    var baseB=BASELINE_PROBLEMS?BASELINE_PROBLEMS.filter(function(p){return p.level==='bad';}).length:null;
+    var baseW=BASELINE_PROBLEMS?BASELINE_PROBLEMS.filter(function(p){return p.level==='warn';}).length:null;
+    var newB=bestResult.problems.filter(function(p){return p.level==='bad';}).length;
+    var newW=bestResult.problems.filter(function(p){return p.level==='warn';}).length;
+    var compareText='';
+    if(baseB!==null){
+      compareText='<br>Vorher: '+(baseB>0?baseB+' ⛔':'')+' '+(baseW>0?baseW+' ⚠':'')+(baseB===0&&baseW===0?'✓ keine':'');
+      compareText+=' → Nachher: '+(newB>0?newB+' ⛔':'')+' '+(newW>0?newW+' ⚠':'')+(newB===0&&newW===0?'✓ keine':'');
+    }
+    applyResult(bestResult);
+    var el=g('autofix-result');
+    el.style.display='block';
+    el.innerHTML='<b>Auto-Fix:</b> '+bestAng+'° · '+['Sehr eng','Eng','Mittel','Locker','Weit'][bestDens-1]+
+      '<br>'+bestResult.pts.length+' Shaping Points · '+
+      (newB===0&&newW===0?'<span style="color:var(--ok)">✅ Alle Probleme behoben</span>':
+        '<span style="color:var(--warn)">'+(newB>0?newB+' ⛔':'')+' '+(newW>0?newW+' ⚠':'')+' nicht lösbar</span>')+
+      (compareText?compareText:'');
+    // Verbleibende Probleme mit Navigation anzeigen
+    var remaining=bestResult.problems.filter(function(p){return p.level==='bad'||p.level==='warn';});
+    if(remaining.length){
+      var remDiv=document.createElement('div');
+      remDiv.style.cssText='margin-top:6px;display:flex;flex-direction:column;gap:3px;';
+      remaining.forEach(function(p){
+        var row=document.createElement('div');
+        row.style.cssText='background:rgba(255,255,255,.04);border-radius:2px;padding:5px 7px;font-size:9px;line-height:1.5;'+(p.seg?'cursor:pointer;':'');
+        row.innerHTML=(p.level==='bad'?'⛔':'⚠️')+' <b>'+esc(p.title)+'</b><br>'+esc(p.sub)+(p.seg?'<span style="color:var(--or)"> → Tippen: Zur Stelle</span>':'');
+        if(p.seg){
+          (function(seg){row.addEventListener('click',function(){focusSegment(seg);});})(p.seg);
+        }
+        remDiv.appendChild(row);
+      });
+      el.appendChild(remDiv);
+    }
+    showToast('Auto-Fix: '+bestAng+'° · '+bestResult.pts.length+' SP');
+  },50);
+}
+
+function updateSliderUI(){
+  var densLabels=['Sehr eng','Eng','Mittel','Locker','Weit'];
+  var angEl=g('ang-r'),angVal=g('ang-val'),angFill=g('ang-fill'),angDesc=g('ang-desc');
+  if(angEl)angEl.value=angleThresh;
+  if(angVal)angVal.textContent=angleThresh+'°';
+  if(angFill)angFill.style.width=((angleThresh-5)/40*100)+'%';
+  if(angDesc)angDesc.textContent='Richtungsänderung ab '+angleThresh+'° → Shaping Point gesetzt';
+  var densEl=g('dens-r'),densVal=g('dens-val'),densFill=g('dens-fill'),densDesc2=g('dens-desc');
+  if(densEl)densEl.value=density;
+  if(densVal)densVal.textContent=densLabels[density-1];
+  if(densFill)densFill.style.width=((density-1)/4*100)+'%';
+  if(densDesc2){var i=density-1;densDesc2.textContent='Stadt: '+ZONE_GAPS.city[i]+'m · Ort: '+ZONE_GAPS.suburban[i]+'m · Land: '+(ZONE_GAPS.rural[i]/1000).toFixed(1)+'km · Autobahn: '+(ZONE_GAPS.highway[i]/1000).toFixed(0)+'km';}
+}
+
+// GPX PARSE
+// Unterstützt drei Formate:
+// 1. Standard GPX:           <trk><trkseg><trkpt>
+// 2. Kurviger/Garmin Export: <rte><rtept><gpxx:RoutePointExtension><gpxx:rpt>  (detaillierte Punkte)
+// 3. Einfache Route:         <rte><rtept> (sparse, Fallback)
+var GPXX_NS='http://www.garmin.com/xmlschemas/GpxExtensions/v3';
+var TRP_NS='http://www.garmin.com/xmlschemas/TripExtensions/v1';
+
+function parseGPX(xml){
+  var doc=new DOMParser().parseFromString(xml,'text/xml'),track=[],vias=[];
+  track._hasTrack=false;
+  track._fromRpt=false;
+
+  // getElementsByTagName ist namespace-blind → findet trkpt/rtept/wpt
+  // auch wenn DOMParser das XML namespace-aware parsed (CSS-Selektoren versagen dort)
+  function getEls(parent,tag){return parent.getElementsByTagName(tag);}
+  function getEl(parent,tag){return parent.getElementsByTagName(tag)[0]||null;}
+
+  function parseLatLon(n){
+    var lat=parseFloat(n.getAttribute('lat')),lon=parseFloat(n.getAttribute('lon'));
+    return(isNaN(lat)||isNaN(lon))?null:{lat:lat,lon:lon,ele:0};
+  }
+  function parseNode(n){
+    var p=parseLatLon(n);if(!p)return null;
+    var eleEl=getEl(n,'ele');
+    if(eleEl)p.ele=parseFloat(eleEl.textContent)||0;
+    return p;
+  }
+
+  // 1. Standard Track: <trkpt> — getElementsByTagName findet auch NS-qualifizierte Elemente
+  var trkptList=getEls(doc,'trkpt');
+  for(var i=0;i<trkptList.length;i++){var p=parseNode(trkptList[i]);if(p)track.push(p);}
+  if(track.length>0){track._hasTrack=true;}
+
+  // 2. Kurviger/Garmin-Format: <gpxx:rpt> innerhalb <rtept>
+  // Kurviger bettet den detaillierten GPS-Pfad in RoutePointExtension ein
+  if(!track._hasTrack){
+    var rpts=doc.getElementsByTagNameNS(GPXX_NS,'rpt');
+    if(rpts.length>0){
+      var prev=null;
+      for(var i=0;i<rpts.length;i++){
+        var p=parseLatLon(rpts[i]);
+        if(!p)continue;
+        // Duplikate an Segment-Grenzen überspringen (gleiche Position)
+        if(prev&&Math.abs(p.lat-prev.lat)<0.000005&&Math.abs(p.lon-prev.lon)<0.000005)continue;
+        track.push(p);prev=p;
+      }
+      if(track.length>0){track._hasTrack=true;track._fromRpt=true;}
+    }
+  }
+
+  // 3. <rtept> auswerten: echte Stops vs. Kurviger-Shaping-Points
+  var rteptList=getEls(doc,'rtept');
+  for(var i=0;i<rteptList.length;i++){
+    var n=rteptList[i];
+    var p=parseNode(n);if(!p)continue;
+    var nameEl=getEl(n,'name'),name=nameEl?nameEl.textContent.trim():'';
+
+    // Kurviger: <type>-Element ist zuverlässigstes Kriterium
+    var typeEl=getEl(n,'type'),typeVal=typeEl?typeEl.textContent.trim().toLowerCase():'';
+    var isRealByType=typeVal==='start'||typeVal==='via'||typeVal==='destination'||typeVal==='end';
+    var isShapingByType=typeVal==='shaping';
+
+    // Kurviger TripExtensions ShapingPoint
+    var shapingEl=n.getElementsByTagNameNS(TRP_NS,'ShapingPoint')[0];
+    var isKurvigerShaping=!!shapingEl||isShapingByType;
+
+    // Garmin Subclass (von eigenem Export oder anderen Garmin-Tools)
+    var subEl=n.getElementsByTagNameNS(GPXX_NS,'Subclass')[0];
+    var sub=subEl?subEl.textContent:'';
+    var isGarminShaping=sub.indexOf('FFF')>=0;
+
+    var isStop=false;
+    if(isRealByType&&!isKurvigerShaping&&!isGarminShaping){
+      isStop=true;
+    } else if(!typeVal&&!isKurvigerShaping&&!isGarminShaping&&isRealStop(name)){
+      // Fallback für GPX ohne <type>: Name-basierte Erkennung
+      isStop=true;
+    }
+
+    if(isStop){
+      p._name=name;
+      vias.push(p);
+    } else if(!track._hasTrack){
+      // Allerletzter Fallback: sparse rtept als Track
+      track.push(p);
+    }
+  }
+
+  // 4. Waypoints als letzten Ausweg
+  if(!track._hasTrack&&!track.length){
+    var wptList=getEls(doc,'wpt');
+    for(var i=0;i<wptList.length;i++){var p=parseNode(wptList[i]);if(p)track.push(p);}
+  }
+
+  return{track:track,vias:vias};
+}
+
+// BUILD GARMIN GPX
+function buildGarminGPX(pts,routeName){
+  var SUB='000000000000FFFFFFFFFFFFFFFFFFFFFFFF';
+  var L=['<?xml version="1.0" encoding="UTF-8"?>',
+    '<gpx version="1.1" creator="GPX-Shaping-Tool-XT2" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd">',
+    '<metadata><name>'+esc(routeName)+'</name><time>'+new Date().toISOString()+'</time></metadata>',
+    '<rte><name>'+esc(routeName)+'</name>'];
+  pts.forEach(function(p){
+    L.push('  <rtept lat="'+p.lat.toFixed(6)+'" lon="'+p.lon.toFixed(6)+'">');
+    if(p.ele>0)L.push('    <ele>'+p.ele.toFixed(1)+'</ele>');
+    if(p._type==='start')L.push('    <name>Start</name>');
+    else if(p._type==='end')L.push('    <name>Ziel</name>');
+    else if(p._type==='via')L.push('    <name>'+esc(p._name||'Stop')+'</name>');
+    else L.push('    <extensions><gpxx:RoutePointExtension><gpxx:Subclass>'+SUB+'</gpxx:Subclass></gpxx:RoutePointExtension></extensions>');
+    L.push('  </rtept>');
+  });
+  L.push('</rte>','</gpx>');
+  return L.join('\n');
+}
+
+function esc(s){
+  return(s+'').replace(/[<>&"']/g,function(c){var m={'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'};return m[c];});
+}
+
+// MAP
+var MAP_TILES={
+  dark:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  light:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  topo:'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+  // Esri World Street Map: OSM-Daten, kein Referrer-Problem, lokal + gehostet
+  // Achtung: Esri nutzt {z}/{y}/{x} statt {z}/{x}/{y}!
+  street:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+  // Echtes OSM: funktioniert nur wenn gehostet (HTTPS-Domain als Referrer nötig)
+  osm:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+};
+var MAP_ATTR={
+  dark:'© CartoDB',
+  light:'© CartoDB',
+  topo:'© OpenTopoMap · © OpenStreetMap contributors',
+  street:'© Esri · © OpenStreetMap contributors',
+  osm:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors</a>'
+};
+// OSM-Tiles brauchen Leaflet's nativen referrerPolicy-Option (setzt BEFORE src)
+// Esri: kein Referrer-Problem, funktioniert lokal + gehostet
+function setMapStyle(style){
+  // Warnung wenn echte OSM-Kacheln lokal geöffnet werden
+  if(style==='osm'&&location.protocol==='file:'){
+    showToast('⚠️ OSM lokal geblockt (Referrer-Policy). Esri "Straße" nutzen oder Datei hosten.');
+  }
+  mapStyle=style;
+  ['dark','light','topo','street','osm'].forEach(function(s){
+    var b1=g('ms-'+s),b2=g('msb-'+s);
+    if(b1)b1.classList.toggle('active',s===style);
+    if(b2)b2.classList.toggle('on',s===style);
+  });
+  if(!HAS_MAP||!map)return;
+  if(tileLayer)tileLayer.remove();
+  // OSM: Leaflet 1.9 native referrerPolicy-Option setzt es BEFORE tile.src → korrekt
+  var tileOpts={maxZoom:19,attribution:MAP_ATTR[style]||''};
+  if(style==='osm')tileOpts.referrerPolicy='no-referrer';
+  tileLayer=L.tileLayer(MAP_TILES[style],tileOpts).addTo(map);
+  // Track mit angepasstem Kontrast neu zeichnen
+  if(RESULT)drawResult(TRACK,RESULT);
+}
+
+function drawElev(pts){
+  var w=g('ew');
+  var eles=pts.map(function(p){return p.ele||0;});
+  var eleRange=Math.max.apply(null,eles)-Math.min.apply(null,eles);
+  if(!pts||eleRange<5){if(w)w.style.display='none';return;}
+  if(w)w.style.display='block';
+  var cv=g('ec');if(!cv)return;
+  var W=cv.offsetWidth||300,H=44;cv.width=W;cv.height=H;
+  var ctx=cv.getContext('2d'),el=pts.map(function(p){return p.ele;});
+  var mn=Math.min.apply(null,el),mx=Math.max.apply(null,el),rng=mx-mn||1,step=W/Math.max(pts.length-1,1);
+  ctx.fillStyle='#161616';ctx.fillRect(0,0,W,H);
+  ctx.beginPath();ctx.moveTo(0,H-(el[0]-mn)/rng*(H-8)-4);
+  for(var i=1;i<pts.length;i++)ctx.lineTo(i*step,H-(el[i]-mn)/rng*(H-8)-4);
+  ctx.strokeStyle='#FF6200';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fillStyle='rgba(255,98,0,.08)';ctx.fill();
+}
+
+function initMap(track){
+  if(!HAS_MAP)return;
+  try{
+    if(!map){
+      map=L.map('map',{zoomControl:false,attributionControl:false});
+      var initOpts={maxZoom:19,attribution:MAP_ATTR[mapStyle]||''};
+      if(mapStyle==='osm')initOpts.referrerPolicy='no-referrer';
+      tileLayer=L.tileLayer(MAP_TILES[mapStyle],initOpts).addTo(map);
+      var mBounds=L.latLngBounds();
+      track.forEach(function(p){mBounds.extend([p.lat,p.lon]);});
+      map.fitBounds(mBounds,{padding:[60,60]});
+      // Sicherstellen dass Leaflet die tatsächliche Container-Größe kennt
+      setTimeout(function(){if(map)map.invalidateSize({animate:false});},100);
+    } else {
+      // Karte existiert bereits → Größe neu berechnen (z.B. nach Panel-Änderung)
+      map.invalidateSize({animate:false});
+      var mBounds=L.latLngBounds();
+      track.forEach(function(p){mBounds.extend([p.lat,p.lon]);});
+      map.fitBounds(mBounds,{padding:[60,60]});
+    }
+  }catch(e){console.error(e);}
+}
+
+function drawResult(track,result){
+  if(!HAS_MAP||!map)return;
+  if(window.resultLayer)map.removeLayer(window.resultLayer);
+  if(window.trackLayer)map.removeLayer(window.trackLayer);
+  if(window.riskLayer)map.removeLayer(window.riskLayer);
+  if(window.devLayer){map.removeLayer(window.devLayer);window.devLayer=null;}
+
+  var isTopo=(mapStyle==='topo');
+  var isOSM=(mapStyle==='osm'||mapStyle==='street');
+  var lineW=isTopo?5:isOSM?4.5:3.5;
+  var lineOp=isTopo?0.95:isOSM?0.88:0.78;
+  var ZONE_COL={city:'#ef4444',suburban:'#f59e0b',rural:'#22c55e',highway:'#3b82f6'};
+  var zones=result.zones||[];
+
+  // Track: bei Topo/OSM (helle Karten) weißen Outline-Layer darunter legen
+  var trackGrp=L.featureGroup();
+  if(isTopo||isOSM){
+    var outlineSegs=[];
+    for(var i=0;i<track.length-1;i++)outlineSegs.push([track[i].lat,track[i].lon]);
+    if(track.length)outlineSegs.push([track[track.length-1].lat,track[track.length-1].lon]);
+    var outlineOp=isTopo?0.55:0.7;
+    trackGrp.addLayer(L.polyline(outlineSegs,{color:'#ffffff',weight:lineW+4,opacity:outlineOp,lineJoin:'round',lineCap:'round'}));
+  }
+  // Farbige Zone-Segmente
+  var segStart=0;
+  for(var i=1;i<=zones.length;i++){
+    if(i===zones.length||zones[i]!==zones[i-1]){
+      var seg=track.slice(segStart,i+1).map(function(p){return[p.lat,p.lon];});
+      if(seg.length>1){
+        var col=ZONE_COL[zones[i-1]]||'#22c55e';
+        trackGrp.addLayer(L.polyline(seg,{color:col,weight:lineW,opacity:lineOp,lineJoin:'round',lineCap:'round'}));
+      }
+      segStart=i;
+    }
+  }
+  window.trackLayer=trackGrp;
+  map.addLayer(trackGrp);
+
+  // Risiko-Segmente als gestrichelte Überlagerung
+  var riskGrp=L.featureGroup();
+  (result.segments||[]).filter(function(s){return s.riskLevel!=='ok';}).forEach(function(s){
+    var ll=s.pts.map(function(p){return[p.lat,p.lon];});
+    riskGrp.addLayer(L.polyline(ll,{
+      color:s.riskLevel==='bad'?'#ef4444':'#f59e0b',
+      weight:lineW+2,opacity:.55,dashArray:'8 5',lineJoin:'round'
+    }));
+  });
+  window.riskLayer=riskGrp;
+  map.addLayer(riskGrp);
+
+  // Shaping-Point-Marker
+  var ptsGrp=L.featureGroup();
+  result.pts.forEach(function(p){
+    var t=p._type,fc='#FF6200',r=3,wt=1,bc='#FF6200',fo=0.85;
+    if(t==='start'||t==='end'){fc='#fff';r=5;wt=1.5;bc='#888';fo=1;}
+    else if(t==='via'){fc='#FF6200';r=5;wt=2;bc='#fff';fo=1;}
+    else if(t==='turn'){fc='#FF6200';r=3;wt=1;bc='#FF6200';}
+    else if(t==='interval'){fc='#FF6200';r=1.8;wt=0.5;bc='#FF6200';fo=0.5;}
+    else if(t==='uturn'){fc='#ff0099';r=5;wt=2;bc='#fff';fo=1;}
+    else if(t==='manual'){fc='#0ea5e9';r=4;wt=1.5;bc='#fff';fo=1;}
+    ptsGrp.addLayer(L.circleMarker([p.lat,p.lon],{radius:r,fillColor:fc,color:bc,weight:wt,fillOpacity:fo,opacity:1}));
+  });
+  window.resultLayer=ptsGrp;
+  map.addLayer(ptsGrp);
+  // Abweichungs-Overlay bei Bedarf neu zeichnen
+  if(showDevOverlay){
+    drawDevOverlay(computeDeviations(result,track));
+  }
+}
+
+function showZoneStats(track,zones){
+  var zc={city:0,suburban:0,rural:0,highway:0};
+  zones.forEach(function(z){zc[z]=(zc[z]||0)+1;});
+  var zw=g('zw'),zbar=g('zbar'),zgrid=g('zgrid');
+  if(!zw||!zbar||!zgrid)return;
+  zw.style.display='block';
+  zbar.innerHTML='';
+  var total=zones.length;
+  Object.keys(zc).forEach(function(z){
+    var pct=total>0?zc[z]/total*100:0;
+    var col={city:'#ef4444',suburban:'#f59e0b',rural:'#22c55e',highway:'#3b82f6'}[z]||'#777';
+    zbar.innerHTML+='<div class="zs" style="background:'+col+';width:'+pct+'%;opacity:'+(pct>0?.8:.2)+'"></div>';
+  });
+  var znames={city:'Stadt',suburban:'Ortschaft',rural:'Landstraße',highway:'Autobahn'};
+  zgrid.innerHTML='';
+  Object.keys(znames).forEach(function(z){
+    var col={city:'#ef4444',suburban:'#f59e0b',rural:'#22c55e',highway:'#3b82f6'}[z];
+    var pct=total>0?Math.round(zc[z]/total*100):0;
+    zgrid.innerHTML+='<div class="zi"><div class="zd" style="background:'+col+'"></div>'+znames[z]+': '+pct+'%</div>';
+  });
+}
+
+function renderQuality(track){
+  var qc=g('qual-card');if(!qc||!track.length)return;
+  qc.style.display='block';
+  var totalDist=0;
+  for(var i=1;i<track.length;i++)totalDist+=hav(track[i-1],track[i]);
+  var avgSpacing=track.length>1?totalDist/(track.length-1):0;
+  var eleCount=track.filter(function(p){return p.ele&&p.ele>0;}).length;
+  var elePct=Math.round(eleCount/track.length*100);
+  var rating='',ratingCol='';
+  if(avgSpacing<2){rating='Sehr dicht ✓';ratingCol='var(--ok)';}
+  else if(avgSpacing<10){rating='Gut ✓';ratingCol='var(--ok)';}
+  else if(avgSpacing<30){rating='Ausreichend ⚠';ratingCol='var(--warn)';}
+  else{rating='Zu grob ✗';ratingCol='var(--bad)';}
+  function setText(id,txt,col){var el=g(id);if(el){el.textContent=txt;if(col)el.style.color=col;}}
+  var srcLabel=track._fromRpt?' (gpxx:rpt)':track._hasTrack?' (trkpt)':' (rtept)';
+  setText('q-pts',(SIMPLIFIED_COUNT||track.length)+srcLabel);
+  setText('q-avg',avgSpacing<1?Math.round(avgSpacing*100)/100+'m':Math.round(avgSpacing)+'m');
+  setText('q-ele',elePct+'%',elePct>80?'var(--ok)':elePct>40?'var(--warn)':'var(--bad)');
+  setText('q-rate',rating,ratingCol);
+}
+
+function focusSegment(seg){
+  if(!HAS_MAP||!map||!seg||!seg.pts||!seg.pts.length)return;
+  // Mittelpunkt der größten Lücke berechnen → setView dort
+  // (fitBounds mit 2 weit entfernten Punkten ist unzuverlässig)
+  var lat,lon,zoom=14;
+  if(seg.pts.length>=2){
+    var maxD=0,maxI=0;
+    for(var i=0;i<seg.pts.length-1;i++){
+      var d=hav(seg.pts[i],seg.pts[i+1]);
+      if(d>maxD){maxD=d;maxI=i;}
+    }
+    var a=seg.pts[maxI],b=seg.pts[maxI+1];
+    lat=(a.lat+b.lat)/2;
+    lon=(a.lon+b.lon)/2;
+    // Zoom je nach Lückengröße anpassen
+    zoom=maxD>5000?12:maxD>2000?13:maxD>500?14:15;
+  } else {
+    lat=seg.pts[0].lat;lon=seg.pts[0].lon;
+  }
+  setCol(true);
+  setTimeout(function(){
+    if(map){
+      map.invalidateSize({animate:false});
+      map.setView([lat,lon],zoom);
+    }
+  },290);
+}
+
+function renderProblems(problems){
+  var list=g('prob-list');if(!list)return;
+  var cnt={bad:0,warn:0};
+  problems.forEach(function(p){cnt[p.level]++;});
+  var badge=g('prob-badge');
+  if(badge){
+    if(cnt.bad>0)badge.textContent=cnt.bad,badge.classList.remove('ok');
+    else if(cnt.warn>0)badge.textContent=cnt.warn,badge.classList.remove('ok');
+    else badge.textContent='✓',badge.classList.add('ok');
+    badge.style.display='block';
+  }
+  list.innerHTML='';
+  var hprob=g('h-prob');if(hprob)hprob.style.display=cnt.bad>0||cnt.warn>0?'flex':'none';
+  var hdprob=g('hd-prob');if(hdprob)hdprob.textContent=(cnt.bad>0?cnt.bad+' ⛔':'')+((cnt.bad>0&&cnt.warn>0)?' · ':'')+((cnt.warn>0)?cnt.warn+' ⚠':'');
+  if(!problems.length){list.innerHTML='<div class="empty" style="color:var(--ok)">✅ Keine Probleme erkannt</div>';return;}
+  problems.forEach(function(p){
+    var icons={bad:'⛔',warn:'⚠️'};
+    var div=document.createElement('div');
+    div.className='prob-item '+p.level;
+    var navHint=p.seg?'<span class="prob-nav">📍 Zur Stelle</span>':'';
+    div.innerHTML='<div class="prob-icon">'+(icons[p.level]||'⚠️')+'</div>'+
+      '<div class="prob-body">'+
+        '<div class="prob-title">'+esc(p.title)+'</div>'+
+        (p.sub?'<div class="prob-sub">'+esc(p.sub)+(p.fix?' <span class="prob-fix">→ '+esc(p.fix)+'</span>':'')+'</div>':'')+
+        navHint+
+      '</div>'+
+      '<div class="prob-badge '+p.level+'">'+(p.level==='bad'?'KRITISCH':'PRÜFEN')+'</div>';
+    if(p.seg){
+      div.style.cursor='pointer';
+      (function(seg){
+        div.addEventListener('click',function(){focusSegment(seg);});
+      })(p.seg);
+    }
+    list.appendChild(div);
+  });
+}
+
+function renderSegments(segments){
+  var list=g('seg-list');if(!list)return;
+  list.innerHTML='';
+  if(!segments.length){list.innerHTML='<div class="empty">Keine Abschnitte</div>';return;}
+  var ZONE_LABEL={city:'🏙 Stadt',suburban:'🏘 Ort',rural:'🌿 Land',highway:'🛣 Autobahn'};
+  segments.forEach(function(s){
+    var div=document.createElement('div');
+    div.className='seg-item'+(s.riskLevel!=='ok'?' risk':'');
+    div.style.cursor='pointer';
+    var distTxt=(s.segDist/1000).toFixed(1)+' km';
+    var riskPill='';
+    if(s.riskLevel==='bad')riskPill='<span class="pill warn">⛔ '+Math.round(s.maxGap)+'m Lücke</span>';
+    else if(s.riskLevel==='warn')riskPill='<span class="pill warn">⚠ '+Math.round(s.maxGap)+'m</span>';
+    div.innerHTML=
+      '<div class="seg-head">'+
+        '<span class="seg-name">'+esc(s.fromName)+' → '+esc(s.toName)+'</span>'+
+        '<span class="seg-dist">'+distTxt+'</span>'+
+      '</div>'+
+      '<div class="seg-pills">'+
+        '<span class="pill '+(s.domZone||'rural')+'">'+(ZONE_LABEL[s.domZone]||s.domZone)+'</span>'+
+        '<span class="pill sp">📍 '+s.spCount+' SP</span>'+
+        '<span class="pill muted">↺ '+s.turnCount+' Kreuz.</span>'+
+        (s.maxGap>100?'<span class="pill muted">max '+Math.round(s.maxGap)+'m</span>':'')+
+        riskPill+
+      '</div>';
+    (function(seg){
+      div.addEventListener('click',function(){focusSegment(seg);});
+    })(s);
+    list.appendChild(div);
+  });
+}
+
+function applyResult(result){
+  var pts=result.pts,zones=result.zones,segments=result.segments,problems=result.problems;
+  var viaCount=pts.filter(function(p){return['via','start','end'].indexOf(p._type)>=0;}).length;
+  var spOnly=pts.filter(function(p){return p._type==='turn'||p._type==='interval'||p._type==='uturn'||p._type==='manual';}).length;
+  showDelta(pts.length);prevSPCount=pts.length;
+  function setText(id,txt){var el=g(id);if(el)el.textContent=txt;}
+  setText('s-sp',spOnly);setText('s-turns',result.turnCount);
+  var hsp=g('h-sp');if(hsp)hsp.style.display='flex';setText('hd-sp',pts.length);
+  GPX_CONTENT=buildGarminGPX(pts,(FNAME||'Route').replace(/\.gpx$/i,'')+' – Garmin XT2');
+  GPX_NAME=((FNAME||'Route').replace(/\.gpx$/i,'').replace(/[^a-zA-Z0-9_äöüÄÖÜß\-]/g,'_'))+'_Garmin.gpx';
+  var expCard=g('exp-card');if(expCard)expCard.style.display='block';
+  setText('exp-name',GPX_NAME);setText('exp-sp',spOnly);setText('exp-via',viaCount);
+  var riskCnt=segments.filter(function(s){return s.riskLevel!=='ok';}).length;
+  var expRisk=g('exp-risk');
+  if(expRisk){expRisk.textContent=riskCnt>0?'⚠ '+riskCnt:'✓ Keine';expRisk.style.color=riskCnt>0?'var(--warn)':'var(--ok)';}
+  var btnSave=g('btn-save');if(btnSave)btnSave.disabled=false;
+  var manCount=MANUAL_ADD.size+MANUAL_REMOVE.size;
+  var hm=g('h-manual');if(hm)hm.style.display=manCount>0?'flex':'none';
+  var hdm=g('hd-manual');if(hdm)hdm.textContent=manCount;
+  var btnClMan=g('btn-clear-man');if(btnClMan)btnClMan.style.display=manCount>0?'block':'none';
+  renderProblems(problems);renderSegments(segments);
+  drawResult(TRACK,result);showZoneStats(TRACK,zones);
+}
+
+function recompute(){
+  if(!TRACK.length)return;
+  var result=buildSPs(TRACK,VIAS,angleThresh,density,MANUAL_ADD,MANUAL_REMOVE);
+  RESULT=result;
+  computeVariants();
+  applyResult(result);
+}
+
+function computeVariants(){
+  if(!TRACK.length)return;
+  VARIANTS.compact=buildSPs(TRACK,VIAS,35,4,null,null);
+  VARIANTS.balanced=RESULT||buildSPs(TRACK,VIAS,angleThresh,density,MANUAL_ADD,MANUAL_REMOVE);
+  VARIANTS.precise=buildSPs(TRACK,VIAS,10,2,null,null);
+  activeVariant='balanced';
+  renderVariants();
+}
+
+function renderVariants(){
+  var defs=[
+    {key:'compact',icon:'🗜',label:'Kompakt',desc:'ang=35° · Dichte=Locker',col:'#777'},
+    {key:'balanced',icon:'⚖️',label:'Aktuell',desc:'Aktuelle Einstellungen',col:'var(--or)'},
+    {key:'precise',icon:'🎯',label:'Präzise',desc:'ang=10° · Dichte=Sehr eng',col:'#0ea5e9'}
+  ];
+  defs.forEach(function(d){
+    var v=VARIANTS[d.key];if(!v)return;
+    var spO=v.pts.filter(function(p){return p._type==='turn'||p._type==='interval'||p._type==='uturn'||p._type==='manual';}).length;
+    var probC=v.problems.filter(function(p){return p.level==='bad';}).length;
+    var warnC=v.problems.filter(function(p){return p.level==='warn';}).length;
+    var card=g('var-'+d.key);
+    if(!card)return;
+    card.querySelector('.var-sp').textContent=spO+' SP';
+    card.querySelector('.var-prob').textContent=probC>0?probC+' ⛔':warnC>0?warnC+' ⚠':'✓';
+    card.querySelector('.var-prob').style.color=probC>0?'var(--bad)':warnC>0?'var(--warn)':'var(--ok)';
+    card.classList.toggle('on',d.key===activeVariant);
+  });
+}
+
+function setActiveVariant(key){
+  var v=VARIANTS[key];if(!v)return;
+  activeVariant=key;
+  RESULT=v;
+  if(key==='balanced'){
+    VARIANTS.balanced=v;
+  }
+  GPX_CONTENT=buildGarminGPX(v.pts,(FNAME||'Route').replace(/\.gpx$/i,'')+' – Garmin XT2');
+  GPX_NAME=((FNAME||'Route').replace(/\.gpx$/i,'').replace(/[^a-zA-Z0-9_äöüÄÖÜß\-]/g,'_'))+'_Garmin.gpx';
+  drawResult(TRACK,v);
+  showZoneStats(TRACK,v.zones);
+  renderProblems(v.problems);
+  renderSegments(v.segments);
+  var spOnly=v.pts.filter(function(p){return p._type==='turn'||p._type==='interval'||p._type==='uturn'||p._type==='manual';}).length;
+  function setText(id,txt){var el=g(id);if(el)el.textContent=txt;}
+  setText('s-sp',spOnly);
+  setText('hd-sp',v.pts.length);
+  var expCard=g('exp-card');if(expCard)expCard.style.display='block';
+  setText('exp-sp',spOnly);
+  setText('exp-via',v.pts.filter(function(p){return p._type==='via'||p._type==='start'||p._type==='end';}).length);
+  var riskCnt=v.segments.filter(function(s){return s.riskLevel!=='ok';}).length;
+  var expRisk=g('exp-risk');
+  if(expRisk){expRisk.textContent=riskCnt>0?'⚠ '+riskCnt:'✓ Keine';expRisk.style.color=riskCnt>0?'var(--warn)':'var(--ok)';}
+  var btnSave=g('btn-save');if(btnSave)btnSave.disabled=false;
+  renderVariants();
+  showDelta(v.pts.length);prevSPCount=v.pts.length;
+}
+
+function toggleEditMode(){
+  if(!HAS_MAP||!map||!RESULT){return;}
+  editMode=!editMode;
+  var btn=g('btn-edit');
+  if(btn)btn.classList.toggle('active',editMode);
+  if(editMode){
+    map.getContainer().style.cursor='crosshair';
+    map.on('click',onMapEditClick);
+    showToast('Edit-Modus: Klick auf Track = SP setzen/entfernen');
+  } else {
+    map.getContainer().style.cursor='';
+    map.off('click',onMapEditClick);
+    showToast('Edit-Modus beendet');
+  }
+}
+
+function onMapEditClick(e){
+  if(!RESULT||!TRACK.length)return;
+  var ll=e.latlng;
+  var nearIdx=-1,nearDist=Infinity;
+  RESULT.pts.forEach(function(p){
+    if(p._type==='start'||p._type==='end'||p._type==='via')return;
+    var d=hav({lat:ll.lat,lon:ll.lng},p);
+    if(d<nearDist){nearDist=d;nearIdx=p._trackIdx!=null?p._trackIdx:-1;}
+  });
+  if(nearIdx>=0&&nearDist<30){
+    if(MANUAL_ADD.has(nearIdx)){MANUAL_ADD.delete(nearIdx);}
+    else{MANUAL_REMOVE.add(nearIdx);}
+    recompute();return;
+  }
+  var bestI=-1,bestD=Infinity;
+  TRACK.forEach(function(p,i){
+    var d=hav({lat:ll.lat,lon:ll.lng},p);
+    if(d<bestD){bestD=d;bestI=i;}
+  });
+  if(bestI>=0&&bestD<80){
+    if(MANUAL_REMOVE.has(bestI)){MANUAL_REMOVE.delete(bestI);}
+    else if(!MANUAL_ADD.has(bestI)){MANUAL_ADD.add(bestI);}
+    else{MANUAL_ADD.delete(bestI);}
+    recompute();
+  }
+}
+
+function clearManualEdits(){
+  MANUAL_ADD.clear();MANUAL_REMOVE.clear();
+  recompute();showToast('Manuelle Edits zurückgesetzt');
+}
+
+function loadFile(xml,name){
+  try{
+    var parsed=parseGPX(xml),track=parsed.track,vias=parsed.vias;
+    if(!track.length){showToast('Keine GPS-Punkte gefunden');return;}
+    var rawCount=track.length;
+    var _ht=track._hasTrack,_fr=track._fromRpt;
+    track=simplifyTrack(track,3.0);
+    track._hasTrack=_ht;track._fromRpt=_fr; // simplifyTrack gibt neues Array zurück → flags wiederherstellen
+    TRACK=track;SIMPLIFIED_COUNT=track.length;RAW_COUNT=rawCount;
+    VIAS=vias;RESULT=null;GPX_CONTENT='';prevSPCount=0;FNAME=name;BASELINE_PROBLEMS=null;
+    MANUAL_ADD.clear();MANUAL_REMOVE.clear();
+    var afr=g('autofix-result');if(afr)afr.style.display='none';
+    var dist=0;
+    for(var i=1;i<track.length;i++)dist+=hav(track[i-1],track[i]);
+    function setText(id,txt){var el=g(id);if(el)el.textContent=txt;}
+    setText('s-dist',Math.round(dist/1000));
+    setText('s-via',vias.length||'–');
+    var hdist=g('h-dist');if(hdist)hdist.style.display='flex';
+    setText('hd-dist',Math.round(dist/1000));
+    g('upl').classList.add('h');
+    try{
+      if(!map){
+        setTimeout(function(){initMap(track);drawElev(track);renderQuality(track);recompute();},80);
+      } else {
+        initMap(track);drawElev(track);renderQuality(track);recompute();
+      }
+    }catch(e){drawElev(track);renderQuality(track);recompute();}
+    var vg=g('var-grid');if(vg)vg.style.display='grid';
+    switchTab('info');
+    var trackInfo=track._fromRpt?'Kurviger-Format ('+track.length+' Pts)':'Track ('+track.length+' Pts)';
+    showToast(name+' – '+Math.round(dist/1000)+' km · '+vias.length+' Stops · '+trackInfo);
+  }catch(e){showToast('Fehler: '+e.message);console.error(e);}
+}
+
+function handleFile(input){
+  var f=input.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onerror=function(){showToast('Lesefehler');};
+  r.onload=function(ev){loadFile(ev.target.result,f.name);};
+  r.readAsText(f);input.value='';
+}
+
+function handleDrop(e){
+  e.preventDefault();var dz=g('dz');if(dz)dz.classList.remove('dg');
+  var f=e.dataTransfer.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onerror=function(){showToast('Lesefehler');};
+  r.onload=function(ev){loadFile(ev.target.result,f.name);};
+  r.readAsText(f);
+}
+
+// SAVE
+function doSave(){
+  if(!GPX_CONTENT){showToast('Erst GPX laden');return;}
+  if(navigator.share&&navigator.canShare){
+    try{var f=new File([GPX_CONTENT],GPX_NAME,{type:'application/gpx+xml'});
+      if(navigator.canShare({files:[f]})){navigator.share({files:[f],title:'Garmin Route'}).then(function(){showToast('Geteilt ✓');}).catch(function(e){if(e.name!=='AbortError')openModal();});return;}}catch(_){}
+  }
+  if(window.URL&&window.URL.createObjectURL){
+    openModal();
+  }
+}
+
+function openModal(){
+  var ta=g('sm-ta');if(ta)ta.value=GPX_CONTENT;
+  var dlWrap=g('sm-dl-wrap');
+  if(dlWrap){
+    dlWrap.innerHTML='';
+    var blob=new Blob([GPX_CONTENT],{type:'application/gpx+xml'});
+    var url=URL.createObjectURL(blob);
+    var link=document.createElement('a');link.href=url;link.download=GPX_NAME;link.className='dl-link';link.textContent='💾 Herunterladen';
+    dlWrap.appendChild(link);
+  }
+  g('smod').classList.remove('h');
+}
+
+g('sm-x').addEventListener('click',function(){g('smod').classList.add('h');});
+g('sm-copy').addEventListener('click',function(){
+  var ta=g('sm-ta');if(ta){ta.select();document.execCommand('copy');showToast('Kopiert!');}
+});
+g('sm-open').addEventListener('click',function(){
+  var blob=new Blob([GPX_CONTENT],{type:'application/gpx+xml'});
+  var url=URL.createObjectURL(blob);
+  window.open(url);
+});
+g('btn-save').addEventListener('click',doSave);
+g('btn-new').addEventListener('click',function(){g('upl').classList.remove('h');});
+
+// SLIDERS
+function setAng(val){angleThresh=parseInt(val);recompute();}
+function setDens(val){density=parseInt(val);recompute();}
+
+// PANEL
+var collapsed=false;
+function setCol(c){
+  collapsed=c;
+  var p=g('panel');if(p)p.classList.toggle('col',c);
+  // Leaflet erkennt Größenänderung nicht automatisch → nach CSS-Transition invalidieren
+  setTimeout(function(){if(HAS_MAP&&map)map.invalidateSize({animate:false});},260);
+}
+g('hdl').addEventListener('click',function(){setCol(!collapsed);});
+var startY=0;
+g('panel').addEventListener('touchstart',function(e){startY=e.touches[0].clientY;});
+g('panel').addEventListener('touchend',function(e){
+  var dY=startY-e.changedTouches[0].clientY;
+  if(Math.abs(dY)>60){setCol(dY>0);}
+});
+var mapEl=g('map');
+if(mapEl)mapEl.addEventListener('click',function(){if(!editMode)setCol(true);});
+
+function switchTab(t){
+  ['info','prob','segs','set','exp'].forEach(function(tab){
+    var te=g('p-'+tab),tb=document.querySelector('.tab[data-t="'+tab+'"]');
+    if(te)te.classList.toggle('on',tab===t);
+    if(tb)tb.classList.toggle('on',tab===t);
+  });
+}
+
+document.querySelectorAll('.tab').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    switchTab(this.getAttribute('data-t'));
+  });
+});
+
+// TOAST
+function showToast(msg){
+  var t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){t.remove();},2000);
+}
+
+// DELTA
+var prevSPCount=0;
+function showDelta(cur){
+  var delta=cur-prevSPCount;
+  var deltaEl=g('map-delta');if(!deltaEl)return;
+  if(delta===0){deltaEl.classList.remove('show');return;}
+  var sign=delta>0?'+':'';
+  deltaEl.textContent=sign+delta+' SP';
+  deltaEl.classList.add('show');
+  setTimeout(function(){deltaEl.classList.remove('show');},1200);
+}
+
+// KEYBOARD SHORTCUTS
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  switch(e.key){
+    case '1':switchTab('info');break;
+    case '2':switchTab('prob');break;
+    case '3':switchTab('segs');break;
+    case '4':switchTab('set');break;
+    case '5':switchTab('exp');break;
+    case 'f':case 'F':if(RESULT)runAutoFix();break;
+    case 's':case 'S':if(GPX_CONTENT)doSave();break;
+    case 'e':case 'E':if(HAS_MAP&&map&&RESULT)toggleEditMode();break;
+    case ' ':e.preventDefault();setCol(!collapsed);break;
+    case 'Escape':
+      if(editMode){toggleEditMode();}
+      var sm=g('smod');if(sm&&!sm.classList.contains('h'))sm.classList.add('h');
+      g('upl').classList.add('h');
+      break;
+  }
+});
+
+// INIT
+try{
+  if(typeof L!=='undefined'){
+    HAS_MAP=true;
+    var mu=g('map-ui');if(mu)mu.style.display='flex';
+    var ml=g('map-leg');if(ml)ml.style.display='block';
+  }
+}catch(e){}
+
+if(!('ontouchstart' in window)){
+  var kh=g('kbd-hint');if(kh)kh.style.display='block';
+}
+
+// PWA SERVICE WORKER
+if('serviceWorker' in navigator){
+  var swCode="self.addEventListener('install',function(e){self.skipWaiting();});self.addEventListener('activate',function(e){e.waitUntil(clients.claim());});self.addEventListener('fetch',function(e){e.respondWith(caches.match(e.request).then(function(r){return r||fetch(e.request);}));});";
+  try{
+    var swBlob=new Blob([swCode],{type:'text/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(function(){});
+  }catch(_){}
+}
+
+// Versionsnummer an alle UI-Stellen schreiben (zentral über VERSION-Konstante)
+(function(){
+  var vt='v'+VERSION;
+  var lv=g('logo-ver');     if(lv)lv.textContent=vt;
+  var uv=g('upl-ver');      if(uv)uv.textContent=vt;
+  var vd=g('ver-display');  if(vd)vd.textContent=VERSION;
+  document.title='BK GPX Tuning '+vt;
+})();
+
+</script>
+</body>
+</html>
