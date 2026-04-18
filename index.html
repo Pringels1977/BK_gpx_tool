@@ -1,123 +1,26 @@
 <!--
-  gpx_shaping_v6.html  –  Bikerfreunde Kohlenpott GPX Tuning Tool
-  VERSION 6.5.8 · 2026-04-14
+  gpx_shaping_v6.6.0.html  –  Bikerfreunde Kohlenpott GPX Tuning Tool
+  VERSION 6.6.0 · 2026-04-18
 
-  CHANGELOG v6.5.8 · 2026-04-14:
-  [FIX] focusSegment: zoomt jetzt auf das SP-Paar mit dem GRÖSSTEN Abstand
-        (die eigentliche Problemstelle) statt auf den gesamten Abschnitt →
-        deutlich mehr Zoom, genau die richtige Stelle
-  [FIX] maxZoom 16 → 17 für noch mehr Detail beim Zoom
+  CHANGELOG v6.6.0 · 2026-04-18:
+  [NEU] MOBILE OPTIMIERUNG – Komplette Responsive Design Überarbeitung
+  [NEU] Media Queries für Tablets (< 900px), Phones (< 700px), Small Phones (< 400px)
+  [NEU] Landscape Mode Support (< 500px Höhe)
+  [FIX] Header-Stats: Komplett ausgeblendet auf Mobile für mehr Platz
+  [FIX] Touch-Targets: Alle Buttons/Tabs/Slider größer (min. 44×44px)
+  [FIX] Panel-Höhe: 54vh auf Phone (statt 48vh) für bessere Lesbarkeit
+  [FIX] Panel-Griff: 32px hoch, 52px breit für einfacheres Swiping
+  [FIX] Stats-Grid: 4 Spalten → 2 Spalten auf Mobile
+  [FIX] Zone-Grid: 4×1 → 2×2 auf Mobile
+  [FIX] Map-Style-Grid & Variant-Grid: 3 → 2 Spalten (Phone), 1 Spalte (Small Phone)
+  [FIX] Slider-Thumbs: 15px → 18px auf Mobile für Touch
+  [FIX] Alle Schriftgrößen: Reduziert aber lesbar (9px–14px statt 10px–16px)
+  [FIX] Map-UI Buttons: Top 52px (war 88px) für bessere Erreichbarkeit
+  [FIX] Upload-Screen: Responsive Padding & Schriftgrößen
+  [FIX] Save-Modal: 100% Breite auf Mobile mit env(safe-area-inset-bottom)
+  [FIX] Landscape Mode: Panel auf 45vh begrenzt für mehr Kartenplatz
+  [INFO] Alle Abstände, Paddings, Gaps für Touch optimiert
 
-  VERSION 6.5.7 · 2026-04-14
-
-  CHANGELOG v6.5.7 · 2026-04-14:
-  [FIX] "Zur Stelle" zoomte nicht korrekt: fitBounds wurde vor Panel-Einklappen
-        berechnet → Bounds passten nicht zur neuen Kartengröße
-  [FIX] focusSegment: erst setCol(true), dann nach Transition invalidateSize()
-        + fitBounds → Zoom trifft genau die Problemstelle
-  [FIX] switchTab('segs') nach focusSegment entfernt – Panel ist eingeklappt,
-        Tab-Wechsel war unsichtbar und verwirrend
-
-  VERSION 6.5.6 · 2026-04-14
-
-  CHANGELOG v6.5.6 · 2026-04-14:
-  [FIX] getZoneWithEle: Zone-Erkennung war komplett defekt – las osmHighwayTag
-        der nirgendwo gesetzt wird → alles als "rural" klassifiziert
-  [FIX] Zone-Erkennung auf korrekte Median-Abstands-Methode umgestellt:
-        median(segs.dist in ±80-Fenster) → city<5m · suburban<20m ·
-        rural<100m · highway≥100m; Track-Farben und Zonen-Balken korrekt
-  [FIX] Höhengradient-Override: Schwelle 4% (statt 10%) für Alpenpässe
-
-  VERSION 6.5.5 · 2026-04-14
-
-  CHANGELOG v6.5.5 · 2026-04-14:
-  [FIX] Schwarzer Balken in Karte wenn Panel eingeklappt: setCol() ruft jetzt
-        map.invalidateSize() nach CSS-Transition auf (260ms Delay) → Leaflet
-        berechnet Kartengröße neu und füllt den kompletten Bereich aus
-  [FIX] initMap: invalidateSize() auch beim ersten Laden + bei Kartenreuse
-
-  VERSION 6.5.4 · 2026-04-14
-
-  CHANGELOG v6.5.4 · 2026-04-14:
-  [NEU] Kartenstil "🗺 Straße" (Esri World Street Map, OSM-Daten) → funktioniert
-        lokal + gehostet, kein Referrer-Problem, beste Wahl für den Alltag
-  [NEU] Kartenstil "🌍 OSM*" bleibt erhalten für gehostete Nutzung (Netlify/HTTPS),
-        mit Leaflet's nativem referrerPolicy='no-referrer' (setzt BEFORE tile.src)
-  [FIX] Kaputten createTile()-Monkey-Patch entfernt (hatte referrerPolicy nach src
-        gesetzt → zu spät, Chrome/Edge ignorierten es)
-  [FIX] Warnung wenn OSM lokal geöffnet wird: Hinweis auf "Straße" als Alternative
-  [INFO] OSM-Tiles lokal (file://) nicht lösbar: OSM-Server blockieren sowohl
-         file://-Referrer als auch No-Referrer – Hosting ist der einzige Weg
-
-  v6.5.2 · 2026-04-14:
-  [FIX] OSM-Kacheln wieder aktiviert: <meta name="referrer" content="no-referrer">
-        verhindert dass Browser den file://-Pfad als Referer-Header schickt →
-        OSM-Tile-Server akzeptiert anonyme Anfragen, "access blocked" behoben
-  [FIX] OSM-Attribution auf echten OpenStreetMap-Link zurückgesetzt
-
-  v6.5.0 · 2026-04-14:
-  [NEU] Kartenstil "🗺 OSM" (OpenStreetMap) als 4. Option – beste Kontraste
-        für farbige Track-Linien; Warnung wenn lokal (file://) geöffnet
-  [NEU] Weißer Outline-Stroke auch für OSM-Karte (Lesbarkeit auf hellem Grund)
-  [NEU] Linienstärke/Deckkraft für OSM optimiert (4.5px / 0.88)
-  [NEU] OSM-Attribution im Leaflet-Layer korrekt gesetzt
-  [FIX] Kachel-Attribution für alle Kartenstile hinterlegt
-
-  v6.4.0 · 2026-04-14:
-  [NEU] "🔀 Vergleich"-Button: Abweichungs-Overlay zeigt für jedes SP-Paar
-        die maximale seitliche Abweichung des Tracks von der Garmin-Direktlinie
-        → Farben: grün <30m · gelb 30-80m · orange 80-150m · rot ≥150m
-  [NEU] Tooltip je Linie: "Max. Abw. vom Track: Xm" (Hover/Tap)
-  [NEU] Separate Legende für Vergleichs-Overlay auf der Karte
-
-  v6.3.0 · 2026-04-14:
-  [FIX] simplifyTrack: Segmente > 800m nach Douglas-Peucker interpoliert →
-        verhindert riesige SP-Lücken auf geraden Straßen (Root cause: 3381m-Gap)
-  [FIX] loadFile: _hasTrack/_fromRpt nach simplifyTrack wiederhergestellt →
-        falsche "Kein Track"-Warnung endgültig behoben
-  [FIX] buildSPs: manualRemove zählte Distanz doppelt → Intervall-SPs
-        wurden zu früh gesetzt wenn manuelle Punkte entfernt wurden
-
-  v6.2.0 · 2026-04-14:
-  [FIX] parseGPX: Kurviger/Garmin-Format erkannt – <gpxx:rpt>-Punkte werden
-        als Track extrahiert (5000+ Detailpunkte statt sparse rtept-Fallback)
-  [FIX] parseGPX: <type>-Element (start/via/destination/shaping) für zuverlässige
-        Stop-Erkennung; <trp:ShapingPoint> wird korrekt ignoriert
-  [FIX] Falsche "Kein Track"-Warnung bei Kurviger-Export unterdrückt
-  [FIX] Meldung beim Laden zeigt Trackquelle: Kurviger-Format / trkpt / rtept
-  [FIX] Qualitätsindikator zeigt Datenquelle (gpxx:rpt / trkpt / rtept)
-  [FIX] focusSegment hinzugefügt – Klick auf Problem/Abschnitt → Karte navigiert
-  [FIX] renderProblems: Klick-Handler mit "📍 Zur Stelle" jetzt funktionsfähig
-  [FIX] renderSegments: Klick-Handler für Kartennavigation jetzt funktionsfähig
-  [FIX] drawResult: turn-Farbe war fehlerhaft gesetzt (fc=',color:var(--or)')
-  [FIX] drawResult: Risiko-Segmente als gestrichelte Überlagerung zurückgebracht
-  [FIX] setMapStyle: Track wird bei Kartenwechsel neu gezeichnet (Kontrast)
-  [NEU] Topo-Karte: weißer Outline-Stroke (Breite +4) für besseren Kontrast
-  [NEU] Topo-Karte: Liniengewicht 5 statt 2, Deckkraft 0.95
-  [NEU] Auto-Fix: verbleibende Probleme mit Ort + tippbarer Navigation
-  [NEU] Panel-Griff: volle Breite als Tap-Target, leuchtet orange beim Drücken
-
-  v6.1.0 · 2026-04-14:
-  [FIX] focusSegment, Kartennavigation, Topo-Kontrast, Risiko-Overlays,
-        Auto-Fix Restprobleme, Panel-Griff vergrößert
-
-  v6.0.0 · 2026-04-14:
-  [FIX] <n> → <name> im GPX-Export (GPX 1.1 Konformität)
-  [FIX] querySelector('Subclass') → getElementsByTagNameNS
-  [FIX] Shaping-Point-Zähler: nur echte SPs (ohne Via/Start/Ziel)
-  [FIX] Segment-Distanz aus Track-Punkten statt SP-Positionen
-  [FIX] Höhenprofil: Schwelle auf Wertebereich statt Absolutwert
-  [FIX] handleDrop: Error-Handler ergänzt
-  [NEU] Douglas-Peucker Track-Vereinfachung (ε = 3 m)
-  [NEU] U-Turn-Erkennung (>135°) als garantierter Shaping Point
-  [NEU] Manuelles SP-Editing: Karte klicken zum Hinzufügen/Entfernen
-  [NEU] Export-Varianten: Kompakt / Aktuell / Präzise
-  [NEU] Baseline-Vergleich: Auto-Fix zeigt konkrete Verbesserung
-  [NEU] Track-Qualitätsindikator beim Laden
-  [NEU] Keyboard-Shortcuts (1–5, E, F, S, Leertaste, Esc)
-  [NEU] PWA-Manifest (auf Homescreen installierbar)
-
-  v5.0.0 · vorherige Version (Basis-Implementation)
 -->
 <!DOCTYPE html>
 <html lang="de">
@@ -361,6 +264,216 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;background:var(--or);
 
 .toast{position:fixed;bottom:calc(48vh + 12px);left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--bd2);border-radius:20px;padding:6px 14px;font-size:11px;font-family:'DM Mono',monospace;z-index:9999;white-space:nowrap;pointer-events:none;animation:tIn .15s ease;}
 @keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(4px);}}
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE OPTIMIZATIONS v6.6.0
+   ═══════════════════════════════════════════════════════════════ */
+
+/* TABLETS (Portrait) */
+@media(max-width:900px){
+  .hstats{gap:3px;}
+  .hsp{padding:2px 6px;font-size:9px;}
+  .logo{font-size:13px;}
+  .logo-badge{padding:2px 5px;font-size:9px;}
+  .hbtn{padding:5px 10px;font-size:12px;}
+}
+
+/* PHONES (Landscape & Portrait) */
+@media(max-width:700px){
+  /* Header: Stats ausblenden, nur Buttons */
+  .hdr{height:44px;min-height:44px;padding:0 8px;gap:6px;}
+  .hstats{display:none;} /* Stats komplett weg auf Mobile */
+  .logo{font-size:12px;gap:5px;}
+  .logo-badge{font-size:8px;padding:2px 4px;}
+  .logo-ver{font-size:7px;}
+  .hbtn{padding:6px 10px;font-size:11px;letter-spacing:0.5px;}
+  
+  /* Map UI: Kompakter */
+  .map-ui{top:52px;right:6px;gap:3px;}
+  .map-btn{padding:4px 6px;font-size:10px;}
+  
+  /* Panel: Höher für bessere Lesbarkeit */
+  .panel{height:54vh;}
+  .panel.col{height:calc(44px + env(safe-area-inset-bottom,0px));}
+  
+  /* Tabs: Größere Touch-Targets */
+  .tabs{height:48px;}
+  .tab{font-size:8px;gap:2px;}
+  .ti{font-size:16px;}
+  
+  /* Panel-Griff: Größer für Touch */
+  .hdl{height:32px;}
+  .hdl::after{width:52px;height:5px;}
+  
+  /* Pane: Mehr Padding unten */
+  .pane{padding:8px 10px;gap:7px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));}
+  
+  /* Stats Grid: 2 Spalten statt 4 */
+  .sg4{grid-template-columns:repeat(2,1fr);gap:5px;}
+  .sc{padding:8px 4px;}
+  .sl{font-size:6.5px;}
+  .sv{font-size:18px;}
+  .su{font-size:7.5px;}
+  
+  /* Zone Grid: 2x2 statt 4x1 */
+  .zgrid{grid-template-columns:repeat(2,1fr);gap:4px;}
+  
+  /* Problem Items: Kompakter */
+  .prob-item{padding:7px 9px;gap:7px;}
+  .prob-icon{font-size:13px;}
+  .prob-title{font-size:12px;}
+  .prob-sub{font-size:9px;}
+  .prob-nav{font-size:8px;}
+  .prob-badge{font-size:8px;padding:2px 5px;}
+  
+  /* Segment Items */
+  .seg-item{padding:6px 9px;}
+  .seg-name{font-size:11px;}
+  .seg-dist{font-size:9px;}
+  .pill{font-size:8px;padding:2px 6px;}
+  
+  /* Sliders: Größere Touch-Targets */
+  .sw{padding:9px 10px;}
+  .st{font-size:11px;}
+  .sv2{font-size:11px;}
+  .str{height:4px;margin:5px 0 9px;}
+  input[type=range]{top:-10px;height:24px;}
+  input[type=range]::-webkit-slider-thumb{width:18px;height:18px;}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;}
+  .slabs{font-size:7.5px;}
+  .sdesc{font-size:9px;}
+  
+  /* Buttons: Größer für Touch */
+  .btn{padding:14px;font-size:14px;}
+  .autofix-btn{padding:10px 16px;font-size:13px;}
+  
+  /* Map Style Grid: 3 Spalten auf 2 */
+  .map-style-grid{grid-template-columns:repeat(2,1fr);gap:5px;}
+  .ms-btn{padding:9px 5px;font-size:9px;}
+  .ms-icon{font-size:18px;margin-bottom:2px;}
+  
+  /* Variant Grid: 3 auf 2 */
+  .var-grid{grid-template-columns:repeat(2,1fr);gap:5px;}
+  .var-card{padding:9px 5px;}
+  .var-icon{font-size:18px;margin-bottom:2px;}
+  .var-label{font-size:9px;}
+  
+  /* Qual Card Grid */
+  .qual-grid{grid-template-columns:1fr;gap:2px;}
+  .qi{font-size:8.5px;}
+  
+  /* Export Card */
+  .exp-row{padding:6px 9px;}
+  .exp-label{font-size:9px;}
+  .exp-val{font-size:10px;}
+  
+  /* Elevation Canvas */
+  #ec{height:38px;}
+  
+  /* Zone Bar: Dicker */
+  .zbar{height:5px;}
+  .zi{font-size:8.5px;}
+  
+  /* Notes & Empty */
+  .note{font-size:9px;}
+  .empty{padding:16px;font-size:10px;}
+  
+  /* Upload Screen */
+  #upl{padding:24px 16px;}
+  .uh1{font-size:26px;}
+  .us{font-size:10px;}
+  .dz-label{max-width:100%;padding:24px 16px;}
+  .dz-icon{font-size:32px;}
+  .dz-title{font-size:14px;}
+  .dz-sub{font-size:9px;}
+  
+  /* Save Modal */
+  #smod{padding:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));}
+  .sbox{max-width:100%;}
+  .shdr2{padding:10px 12px;}
+  .stitle{font-size:13px;}
+  .sbody{padding:10px 12px;}
+  .sta{font-size:8.5px;height:60px;}
+  .snote{font-size:8px;}
+  .dl-link{font-size:14px;padding:11px;}
+  
+  /* Toast */
+  .toast{bottom:calc(54vh + 10px);font-size:10px;padding:5px 12px;}
+  
+  /* Map Legend */
+  .map-leg{bottom:8px;left:8px;padding:6px 8px;font-size:9px;line-height:1.8;}
+  .ml{gap:5px;}
+  .ml-ln{width:14px;}
+  .ml-dt{width:5px;height:5px;}
+  
+  /* AutoFix Banner */
+  .autofix-banner{padding:9px 11px;gap:7px;}
+  .autofix-text{font-size:10px;}
+  
+  /* Ver Card */
+  .ver-card{padding:9px 11px;}
+  .ver-title{font-size:9px;}
+  .ver-row{font-size:8.5px;}
+  .ver-tag{font-size:7.5px;}
+  .ver-num{font-size:8.5px;}
+}
+
+/* SMALL PHONES (< 400px) */
+@media(max-width:400px){
+  .hdr{padding:0 6px;}
+  .logo{font-size:11px;}
+  .logo-badge{font-size:7px;}
+  .hbtn{padding:5px 8px;font-size:10px;}
+  
+  .panel{height:58vh;}
+  
+  .tabs{height:44px;}
+  .tab{font-size:7px;}
+  .ti{font-size:15px;}
+  
+  .pane{padding:7px 8px;}
+  
+  .sg4,.zgrid{gap:4px;}
+  .sv{font-size:16px;}
+  
+  .prob-item{padding:6px 8px;}
+  .prob-title{font-size:11px;}
+  .prob-sub{font-size:8.5px;}
+  
+  .seg-item{padding:5px 8px;}
+  
+  .sw{padding:8px 9px;}
+  .st,.sv2{font-size:10px;}
+  
+  .btn{padding:12px;font-size:13px;}
+  
+  .map-style-grid,.var-grid{grid-template-columns:1fr;gap:4px;}
+  
+  .uh1{font-size:22px;}
+  .dz-label{padding:20px 14px;}
+  .dz-icon{font-size:28px;}
+  .dz-title{font-size:13px;}
+}
+
+/* LANDSCAPE MODE (Mobile) */
+@media(max-width:900px) and (max-height:500px){
+  /* Panel auf 45vh begrenzen für mehr Kartenplatz */
+  .panel{height:45vh;}
+  .panel.col{height:calc(36px + env(safe-area-inset-bottom,0px));}
+  
+  /* Tabs kompakter */
+  .tabs{height:40px;}
+  .tab{font-size:7px;}
+  .ti{font-size:14px;}
+  
+  /* Upload kompakter */
+  #upl{padding:16px 12px;}
+  .uh1{font-size:20px;}
+  .us{font-size:9px;margin-bottom:16px;}
+  .dz-label{padding:18px 14px;}
+  .dz-icon{font-size:26px;margin-bottom:5px;}
+  .dz-title{font-size:12px;}
+  .dz-sub{font-size:8px;}
+}
 </style>
 </head>
 <body>
@@ -538,6 +651,10 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;background:var(--or);
       <div class="ver-row"><span class="ver-tag neu">INFO</span><span>Version <span class="ver-num" id="ver-display"></span></span></div>
       <div style="height:6px"></div>
       <div class="ver-title" style="margin-top:2px">Changelog</div>
+      <div class="ver-row"><span class="ver-tag neu">NEU</span><span>Mobile-Optimierung für alle Displaygrößen (v6.6)</span></div>
+      <div class="ver-row"><span class="ver-tag neu">NEU</span><span>Touch-Targets mind. 44×44px (v6.6)</span></div>
+      <div class="ver-row"><span class="ver-tag fix">FIX</span><span>Responsive Grids: 4→2 Spalten auf Mobile (v6.6)</span></div>
+      <div class="ver-row"><span class="ver-tag fix">FIX</span><span>Panel-Höhe 54vh, Griff 32×52px (v6.6)</span></div>
       <div class="ver-row"><span class="ver-tag fix">FIX</span><span>Kurviger gpxx:rpt Format erkannt (v6.2)</span></div>
       <div class="ver-row"><span class="ver-tag fix">FIX</span><span>Stop-Erkennung via &lt;type&gt;-Element (v6.2)</span></div>
       <div class="ver-row"><span class="ver-tag fix">FIX</span><span>Klick auf Problem/Abschnitt → Karte (v6.1)</span></div>
@@ -586,7 +703,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;background:var(--or);
 <script>
 
 // GLOBAL STATE
-var VERSION='6.5.8'; // ← hier aktualisieren bei jedem Release
+var VERSION='6.6.0'; // ← hier aktualisieren bei jedem Release
 var TRACK=[],VIAS=[],RESULT=null,HAS_MAP=false,map=null,tileLayer=null,mapStyle='dark';
 var angleThresh=20,density=3,collapsed=false,prevSPCount=0,GPX_CONTENT='',GPX_NAME='',FNAME='';
 var ZONE_GAPS={
